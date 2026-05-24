@@ -7,12 +7,20 @@ import { EvBadge } from "@/components/bets/ev-badge";
 
 /** Compare the same market across books for a featured bet */
 export function SportsbookComparison({ bet }: { bet: BetOpportunity }) {
-  const books = [
-    { name: bet.sportsbook, odds: bet.americanOdds, ev: bet.evPercent },
+  const otherBooks = [
     { name: "FanDuel", odds: bet.americanOdds + 5, ev: bet.evPercent - 0.8 },
     { name: "DraftKings", odds: bet.americanOdds - 3, ev: bet.evPercent + 0.4 },
     { name: "BetMGM", odds: bet.americanOdds + 8, ev: bet.evPercent - 1.2 },
-  ].sort((a, b) => b.ev - a.ev);
+    { name: "Caesars", odds: bet.americanOdds + 2, ev: bet.evPercent - 0.3 },
+    { name: "Pinnacle", odds: bet.americanOdds - 2, ev: bet.evPercent + 0.6 },
+  ].filter((b) => b.name !== bet.sportsbook);
+
+  const books = [
+    { name: bet.sportsbook, odds: bet.americanOdds, ev: bet.evPercent },
+    ...otherBooks,
+  ]
+    .sort((a, b) => b.ev - a.ev)
+    .slice(0, 4);
 
   return (
     <Card>
