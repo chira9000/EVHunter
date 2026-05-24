@@ -1,0 +1,389 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Sport {
+  NBA
+  NFL
+  MLB
+  NHL
+  NCAAF
+  NCAAB
+  MLS
+  EPL
+}
+
+enum BetType {
+  MONEYLINE
+  SPREAD
+  TOTAL
+  PLAYER_PROP
+  TEAM_PROP
+  FUTURE
+}
+
+enum BetSide {
+  OVER
+  UNDER
+  HOME
+  AWAY
+  YES
+  NO
+}
+
+enum GameStatus {
+  SCHEDULED
+  LIVE
+  FINAL
+  POSTPONED
+  CANCELLED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  watchlist     WatchlistItem[]
+  alerts        Alert[]
+  trackedBets   TrackedBet[]
+  modelConfigs  UserModelConfig[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Sportsbook {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  region    String?
+  isSharp   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  odds OddsLine[]
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  externalId String? @unique
+  sport     Sport
+  name      String
+  abbreviation String
+  city      String?
+  logoUrl   String?
+  createdAt DateTime @default(now())
+
+  homeGames Game[] @relation("HomeTeam")
+  awayGames Game[] @relation("AwayTeam")
+  players   Player[]
+}
+
+model Player {
+  id         String   @id @default(cuid())
+  externalId String?  @unique
+  teamId     String?
+  sport      Sport
+  name       String
+  position   String?
+  imageUrl   String?
+  createdAt  DateTime @default(now())
+
+  team       Team?    @relation(fields: [teamId], references: [id])
+  stats      PlayerStatSnapshot[]
+  props      PropMarket[]
+  predictions ModelPrediction[]
+}
+
+model Game {
+  id           String     @id @default(cuid())
+  externalId   String?    @unique
+  sport        Sport
+  homeTeamId   String
+  awayTeamId   String
+  scheduledAt  DateTime
+  status       GameStatus @default(SCHEDULED)
+  homeScore    Int?
+  awayScore    Int?
+  venue        String?
+  season       String?
+  week         Int?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  homeTeam     Team       @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam     Team       @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  props        PropMarket[]
+  odds         OddsLine[]
+  predictions  ModelPrediction[]
+  results      HistoricalResult[]
+
+  @@index([sport, scheduledAt])
+  @@index([status])
+}
+
+model PropMarket {
+  id          String   @id @default(cuid())
+  gameId      String
+  playerId    String?
+  betType     BetType
+  marketKey   String
+  line        Float?
+  description String
+  createdAt   DateTime @default(now())
+
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player      Player?  @relation(fields: [playerId], references: [id])
+  odds        OddsLine[]
+  predictions ModelPrediction[]
+
+  @@unique([gameId, marketKey, playerId])
+  @@index([betType])
+}
+
+model OddsLine {
+  id            String   @id @default(cuid())
+  propMarketId  String?
+  gameId        String?
+  sportsbookId  String
+  betType       BetType
+  side          BetSide?
+  americanOdds  Int
+  decimalOdds   Float
+  impliedProb   Float
+  line          Float?
+  capturedAt    DateTime @default(now())
+  isClosing     Boolean  @default(false)
+
+  propMarket    PropMarket? @relation(fields: [propMarketId], references: [id], onDelete: Cascade)
+  game          Game?       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  sportsbook    Sportsbook  @relation(fields: [sportsbookId], references: [id])
+  movements     LineMovement[]
+
+  @@index([propMarketId, sportsbookId, capturedAt])
+  @@index([gameId, sportsbookId])
+  @@index([capturedAt])
+}
+
+model LineMovement {
+  id           String   @id @default(cuid())
+  oddsLineId   String
+  americanOdds Int
+  impliedProb  Float
+  line         Float?
+  steamScore   Float?
+  sharpIndicator Float?
+  capturedAt   DateTime @default(now())
+
+  oddsLine     OddsLine @relation(fields: [oddsLineId], references: [id], onDelete: Cascade)
+
+  @@index([oddsLineId, capturedAt])
+}
+
+model PlayerStatSnapshot {
+  id        String   @id @default(cuid())
+  playerId  String
+  season    String
+  gamesPlayed Int
+  statsJson Json
+  capturedAt DateTime @default(now())
+
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, season])
+}
+
+model ModelPrediction {
+  id              String   @id @default(cuid())
+  gameId          String?
+  propMarketId    String?
+  playerId        String?
+  modelKey        String
+  modelVersion    String   @default("1.0.0")
+  trueProbability Float
+  fairAmericanOdds Int
+  confidence      Float
+  featuresJson    Json?
+  createdAt       DateTime @default(now())
+
+  game            Game?       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  propMarket      PropMarket? @relation(fields: [propMarketId], references: [id], onDelete: Cascade)
+  player          Player?     @relation(fields: [playerId], references: [id])
+
+  @@index([modelKey, createdAt])
+  @@index([propMarketId])
+}
+
+model EvOpportunity {
+  id                String   @id @default(cuid())
+  propMarketId      String?
+  gameId            String?
+  sportsbookId      String
+  betType           BetType
+  side              BetSide?
+  americanOdds      Int
+  impliedProbability Float
+  modelProbability  Float
+  fairOdds          Int
+  evPercent         Float
+  kellyFraction     Float
+  confidence        Float
+  clv               Float?
+  hitRate           Float?
+  injuryFlag        Boolean  @default(false)
+  newsSnippet       String?
+  rankedAt          DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([evPercent])
+  @@index([confidence])
+  @@index([rankedAt])
+}
+
+model ArbitrageOpportunity {
+  id            String   @id @default(cuid())
+  gameId        String?
+  propMarketId  String?
+  profitPercent Float
+  legsJson      Json
+  detectedAt    DateTime @default(now())
+  expiresAt     DateTime?
+
+  @@index([profitPercent, detectedAt])
+}
+
+model HistoricalResult {
+  id           String   @id @default(cuid())
+  gameId       String
+  marketKey    String
+  outcome      String
+  actualValue  Float?
+  settledAt    DateTime @default(now())
+
+  game         Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId])
+}
+
+model WatchlistItem {
+  id           String   @id @default(cuid())
+  userId       String
+  propMarketId String?
+  evOpportunityId String?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Alert {
+  id          String   @id @default(cuid())
+  userId      String
+  minEvPercent Float   @default(3)
+  sports      Sport[]
+  sportsbooks String[]
+  webhookUrl  String?
+  discordUrl  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TrackedBet {
+  id            String   @id @default(cuid())
+  userId        String
+  description   String
+  stake         Float
+  americanOdds  Int
+  result        String?
+  profitLoss    Float?
+  placedAt      DateTime @default(now())
+  settledAt     DateTime?
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UserModelConfig {
+  id         String   @id @default(cuid())
+  userId     String
+  modelKey   String
+  weightsJson Json
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, modelKey])
+}
+
+model BacktestRun {
+  id          String   @id @default(cuid())
+  modelKey    String
+  sport       Sport
+  startDate   DateTime
+  endDate     DateTime
+  roi         Float
+  hitRate     Float
+  sampleSize  Int
+  resultsJson Json
+  createdAt   DateTime @default(now())
+}
+
+model ApiCache {
+  id        String   @id @default(cuid())
+  cacheKey  String   @unique
+  payload   Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
