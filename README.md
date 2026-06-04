@@ -108,6 +108,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | Route | Method | Description |
 |-------|--------|-------------|
 | `/api/bets` | GET | Filtered +EV opportunities |
+| `/api/kalshi/bets` | GET | Daily Kalshi MLB/NFL/NBA game edges |
 | `/api/arbitrage` | GET | Arbitrage opportunities |
 | `/api/odds/stream` | GET | SSE real-time updates |
 | `/api/cron/odds` | GET | Odds ingestion job |
@@ -119,7 +120,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | Path | Description |
 |------|-------------|
 | `/` | Landing page |
-| `/dashboard` | Top +EV table, stats, filters |
+| `/dashboard` | Kalshi daily MLB/NFL/NBA best bets (live) |
 | `/explorer` | Bet cards with full analytics |
 | `/players` | Player analytics & charts |
 | `/arbitrage` | Cross-book arbitrage |
