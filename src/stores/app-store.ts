@@ -27,7 +27,7 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       theme: "dark",
       autoRefresh: true,
-      refreshIntervalMs: 30000,
+      refreshIntervalMs: 120_000,
       filters: defaultFilters,
       sidebarOpen: true,
       setTheme: (theme) => set({ theme }),

@@ -42,6 +42,13 @@ export function noVigFairProbabilities(
   };
 }
 
+/** Remove vig from N-way market (e.g. soccer 1X2) using multiplicative method */
+export function noVigFairProbabilitiesMulti(probs: number[]): number[] {
+  const total = probs.reduce((sum, p) => sum + p, 0);
+  if (total <= 0) throw new Error("Invalid probabilities");
+  return probs.map((p) => p / total);
+}
+
 export function noVigFairOdds(americanA: number, americanB: number): {
   fairAmericanA: number;
   fairAmericanB: number;
@@ -122,4 +129,36 @@ export function formatEvPercent(ev: number): string {
 
 export function formatAmericanOdds(odds: number): string {
   return odds > 0 ? `+${odds}` : `${odds}`;
+}
+
+/** Combined decimal payout for a parlay (independent pricing). */
+export function parlayDecimalOdds(americanOdds: number[]): number {
+  if (americanOdds.length === 0) return 1;
+  return americanOdds.reduce((acc, odds) => acc * americanToDecimal(odds), 1);
+}
+
+/** Product of leg implied probabilities (book treats legs as independent). */
+export function parlayImpliedProbability(impliedProbs: number[]): number {
+  if (impliedProbs.length === 0) return 0;
+  return impliedProbs.reduce((acc, p) => acc * p, 1);
+}
+
+/** Product of model probabilities with a correlation uplift on joint hit rate. */
+export function parlayModelProbability(
+  modelProbs: number[],
+  avgCorrelation: number
+): number {
+  if (modelProbs.length === 0) return 0;
+  const independent = modelProbs.reduce((acc, p) => acc * p, 1);
+  const correlationBoost = 1 + Math.max(0, avgCorrelation) * 0.4;
+  return Math.min(0.98, independent * correlationBoost);
+}
+
+/** Parlay EV% from model joint probability and combined American odds. */
+export function parlayExpectedValuePercent(
+  jointModelProbability: number,
+  americanOdds: number[]
+): number {
+  const decimal = parlayDecimalOdds(americanOdds);
+  return (jointModelProbability * decimal - 1) * 100;
 }

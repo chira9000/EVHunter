@@ -90,7 +90,7 @@ npm run db:seed
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard) in your browser (the dev terminal only shows API logs; the UI loads in the browser).
 
 ## Scripts
 
@@ -108,10 +108,11 @@ Open [http://localhost:3000](http://localhost:3000).
 | Route | Method | Description |
 |-------|--------|-------------|
 | `/api/bets` | GET | Filtered +EV opportunities |
-| `/api/kalshi/bets` | GET | Daily Kalshi MLB/NFL/NBA game edges |
+| `/api/kalshi/bets` | GET | Daily Kalshi edges + recommended pick hit rate |
 | `/api/arbitrage` | GET | Arbitrage opportunities |
 | `/api/odds/stream` | GET | SSE real-time updates |
 | `/api/cron/odds` | GET | Odds ingestion job |
+| `/api/cron/kalshi-settle` | GET | Settle recommended Kalshi picks vs market results |
 | `/api/export/csv` | GET | CSV export |
 | `/api/auth/*` | * | NextAuth handlers |
 
@@ -120,7 +121,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | Path | Description |
 |------|-------------|
 | `/` | Landing page |
-| `/dashboard` | Kalshi daily MLB/NFL/NBA best bets (live) |
+| `/dashboard` | Kalshi props (incl. NBA points) & moneylines + pick hit rate |
 | `/explorer` | Bet cards with full analytics |
 | `/players` | Player analytics & charts |
 | `/arbitrage` | Cross-book arbitrage |
