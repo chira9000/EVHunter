@@ -5,7 +5,7 @@ import { parsePropTitle, teamAbbrFromMarketTicker } from "./prop-parser";
 
 /** Hard filter thresholds — Step 1 */
 export const PORTFOLIO_THRESHOLDS = {
-  minModelProbability: 0.35,
+  minModelProbability: 0.5,
   minEvPercent: 3,
   minPitcherExpectedInnings: 5,
   maxInjuryUncertainty: 0.65,

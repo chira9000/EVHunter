@@ -90,7 +90,7 @@ describe("deduplicateEquivalentMarkets", () => {
         id: "low",
         line: 20,
         yesAsk: 0.4,
-        modelProbability: 0.4,
+        modelProbability: 0.48,
         edgePercent: 3,
       }),
       makeBet({
@@ -146,8 +146,8 @@ describe("betCorrelation", () => {
 describe("filterBadBets", () => {
   it("rejects low model probability", () => {
     const { survivors, rejected } = filterBadBets([
-      makeBet({ modelProbability: 0.3 }),
-      makeBet({ modelProbability: 0.4 }),
+      makeBet({ modelProbability: 0.45 }),
+      makeBet({ modelProbability: 0.52 }),
     ]);
     expect(survivors).toHaveLength(1);
     expect(rejected).toBe(1);
@@ -277,7 +277,7 @@ describe("selectKalshiPortfolio", () => {
         line: 20,
         marketTicker: "DUP",
         yesAsk: 0.41,
-        modelProbability: 0.4,
+        modelProbability: 0.51,
         edgePercent: 3.5,
       }),
     ]);

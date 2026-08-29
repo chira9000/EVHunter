@@ -90,7 +90,7 @@ npm run db:seed
 npm run dev
 ```
 
-Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard) in your browser (the dev terminal only shows API logs; the UI loads in the browser).
+Open [http://localhost:3002/dashboard](http://localhost:3002/dashboard) in your browser (EVHunter uses port **3002** so it does not conflict with other Next.js apps on 3000; the dev terminal only shows API logs — the UI loads in the browser).
 
 ## Scripts
 
