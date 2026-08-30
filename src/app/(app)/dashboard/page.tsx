@@ -4,6 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { useKalshiBets } from "@/hooks/use-kalshi-bets";
 import { KalshiBetsTable } from "@/components/bets/kalshi-bets-table";
 import { PickHitRatePanel } from "@/components/bets/pick-hit-rate-panel";
+import { PicksExportControls } from "@/components/bets/picks-export-controls";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KALSHI_SPORT_KEYS } from "@/types/kalshi";
@@ -63,9 +64,12 @@ export default function DashboardPage() {
             )}
           </p>
         </div>
-        <Button variant="secondary" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4" /> Refresh
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <PicksExportControls />
+          <Button variant="secondary" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4" /> Refresh
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-10">

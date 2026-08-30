@@ -218,6 +218,11 @@ export async function getPickHitRateStats(): Promise<PickHitRateStats> {
   return computePickHitRateStats(picks);
 }
 
+/** All tracked recommended picks (pending + settled), most recent first. */
+export async function getRecommendedPicks(): Promise<RecommendedPick[]> {
+  return loadPicks();
+}
+
 /** Record portfolio, settle due picks, return aggregate stats. */
 export async function syncRecommendedPickTracking(
   bets: KalshiBet[]
