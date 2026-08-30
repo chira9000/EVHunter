@@ -4,6 +4,7 @@ import {
   applySettlementResult,
   betToRecommendedPick,
   computePickHitRateStats,
+  filterPicksForExport,
   isReadyToSettle,
   mergeRecommendedPicks,
 } from "./pick-tracker";
@@ -121,5 +122,52 @@ describe("pick-tracker", () => {
     expect(stats.bySport.NBA?.wins).toBe(1);
     expect(stats.bySport.NBA?.settled).toBe(2);
     expect(stats.bySport.MLB?.hitRate).toBe(1);
+  });
+});
+
+describe("filterPicksForExport", () => {
+  const now = new Date("2026-01-16T12:00:00.000Z");
+
+  function pickAt(hoursAgo: number, overrides: Partial<KalshiBet> = {}) {
+    const recommendedAt = new Date(
+      now.getTime() - hoursAgo * 60 * 60 * 1000
+    ).toISOString();
+    return betToRecommendedPick(sampleBet(overrides), recommendedAt);
+  }
+
+  it("keeps only picks within the trailing window", () => {
+    const picks = [pickAt(1), pickAt(23), pickAt(25), pickAt(48)];
+    const result = filterPicksForExport(picks, { sinceHours: 24, now });
+    expect(result).toHaveLength(2);
+  });
+
+  it("orders results newest first", () => {
+    const picks = [pickAt(20), pickAt(1), pickAt(10)];
+    const result = filterPicksForExport(picks, { sinceHours: 24, now });
+    expect(result.map((p) => p.recommendedAt)).toEqual(
+      [...result.map((p) => p.recommendedAt)].sort().reverse()
+    );
+  });
+
+  it("narrows to the requested sports", () => {
+    const picks = [
+      pickAt(1, { sport: "NBA", marketTicker: "A" }),
+      pickAt(1, { sport: "MLB", marketTicker: "B" }),
+      pickAt(1, { sport: "NFL", marketTicker: "C" }),
+    ];
+    const result = filterPicksForExport(picks, {
+      sinceHours: 24,
+      sports: ["NBA", "MLB"],
+      now,
+    });
+    expect(result.map((p) => p.sport).sort()).toEqual(["MLB", "NBA"]);
+  });
+
+  it("defaults to all sports when no sport filter is given", () => {
+    const picks = [
+      pickAt(1, { sport: "NBA", marketTicker: "A" }),
+      pickAt(1, { sport: "MLB", marketTicker: "B" }),
+    ];
+    expect(filterPicksForExport(picks, { sinceHours: 24, now })).toHaveLength(2);
   });
 });

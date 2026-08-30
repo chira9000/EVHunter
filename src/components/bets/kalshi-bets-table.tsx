@@ -210,8 +210,9 @@ export function KalshiBetsTable({ bets }: { bets: KalshiBet[] }) {
         )}
         {filtered.length > 0 && (
           <p className="border-t border-white/5 px-4 py-2 text-xs text-zinc-600">
-            MLB/NFL/NBA: P≥35%, EV≥3%. Soccer & tennis moneylines ranked by fair price vs
-            Kalshi ask (spread-aware). Diversified with correlation penalties.
+            All markets: model ≥50%, ask ≥50¢. MLB/NFL/NBA props also require EV≥3%.
+            Soccer & tennis moneylines ranked by fair price vs ask. Diversified with
+            correlation penalties.
           </p>
         )}
       </div>

@@ -156,6 +156,26 @@ export function computePickHitRateStats(
   };
 }
 
+/** Picks recommended within the trailing window, optionally narrowed to specific sports. */
+export function filterPicksForExport(
+  picks: RecommendedPick[],
+  options?: { sinceHours?: number; sports?: KalshiSportKey[]; now?: Date }
+): RecommendedPick[] {
+  const sinceHours = options?.sinceHours ?? 24;
+  const now = options?.now ?? new Date();
+  const cutoff = now.getTime() - sinceHours * 60 * 60 * 1000;
+  const sports = options?.sports?.length ? new Set(options.sports) : null;
+
+  return picks
+    .filter((p) => {
+      const recommendedAt = new Date(p.recommendedAt).getTime();
+      if (Number.isNaN(recommendedAt) || recommendedAt < cutoff) return false;
+      if (sports && !sports.has(p.sport)) return false;
+      return true;
+    })
+    .sort((a, b) => b.recommendedAt.localeCompare(a.recommendedAt));
+}
+
 async function loadPicks(): Promise<RecommendedPick[]> {
   const stored = await cacheGet<RecommendedPick[]>(STORE_KEY);
   return Array.isArray(stored) ? stored : [];
@@ -216,6 +236,14 @@ export async function settleRecommendedPicks(options?: {
 export async function getPickHitRateStats(): Promise<PickHitRateStats> {
   const picks = await loadPicks();
   return computePickHitRateStats(picks);
+}
+
+export async function getRecommendedPicksForExport(options?: {
+  sinceHours?: number;
+  sports?: KalshiSportKey[];
+}): Promise<RecommendedPick[]> {
+  const picks = await loadPicks();
+  return filterPicksForExport(picks, options);
 }
 
 /** Record portfolio, settle due picks, return aggregate stats. */

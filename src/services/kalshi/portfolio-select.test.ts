@@ -25,10 +25,10 @@ function makeBet(overrides: Partial<KalshiBet> = {}): KalshiBet {
     playerName: "Test Player",
     statType: "points",
     line: 20,
-    yesAsk: 0.45,
-    yesBid: 0.42,
-    midPrice: 0.435,
-    impliedProbability: 0.45,
+    yesAsk: 0.52,
+    yesBid: 0.49,
+    midPrice: 0.505,
+    impliedProbability: 0.52,
     fairProbability: 0.5,
     modelProbability: 0.52,
     confidence: 0.75,
@@ -148,6 +148,38 @@ describe("filterBadBets", () => {
     const { survivors, rejected } = filterBadBets([
       makeBet({ modelProbability: 0.45 }),
       makeBet({ modelProbability: 0.52 }),
+    ]);
+    expect(survivors).toHaveLength(1);
+    expect(rejected).toBe(1);
+  });
+
+  it("rejects low yes-ask (below 50¢ implied)", () => {
+    const { survivors, rejected } = filterBadBets([
+      makeBet({ yesAsk: 0.36, modelProbability: 0.55, edgePercent: 8 }),
+      makeBet({ yesAsk: 0.52, modelProbability: 0.55, edgePercent: 5 }),
+    ]);
+    expect(survivors).toHaveLength(1);
+    expect(rejected).toBe(1);
+  });
+
+  it("rejects catalog moneylines below 50% model or ask", () => {
+    const { survivors, rejected } = filterBadBets([
+      makeBet({
+        sport: "TENNIS",
+        betType: "moneyline",
+        modelProbability: 0.075,
+        yesAsk: 0.08,
+        edgePercent: -5,
+        injuryUncertainty: 0.7,
+      }),
+      makeBet({
+        sport: "TENNIS",
+        betType: "moneyline",
+        modelProbability: 0.62,
+        yesAsk: 0.58,
+        edgePercent: 2,
+        injuryUncertainty: 0.7,
+      }),
     ]);
     expect(survivors).toHaveLength(1);
     expect(rejected).toBe(1);
@@ -276,7 +308,7 @@ describe("selectKalshiPortfolio", () => {
         id: "dup",
         line: 20,
         marketTicker: "DUP",
-        yesAsk: 0.41,
+        yesAsk: 0.53,
         modelProbability: 0.51,
         edgePercent: 3.5,
       }),

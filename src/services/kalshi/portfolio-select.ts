@@ -3,17 +3,19 @@ import type { KalshiBet } from "@/types/kalshi";
 import { isCatalogMoneyline } from "@/types/kalshi";
 import { parsePropTitle, teamAbbrFromMarketTicker } from "./prop-parser";
 
+/** Universal floor — model & Kalshi ask must be ≥50% (-100 American) for every market */
+export const MIN_MODEL_PROBABILITY = 0.5;
+export const MIN_YES_ASK = 0.5;
+
 /** Hard filter thresholds — Step 1 */
 export const PORTFOLIO_THRESHOLDS = {
-  minModelProbability: 0.5,
   minEvPercent: 3,
   minPitcherExpectedInnings: 5,
   maxInjuryUncertainty: 0.65,
 } as const;
 
-/** Relaxed filters for soccer/tennis moneylines (no stats model; fair vs ask) */
+/** Relaxed EV/injury filters for soccer/tennis moneylines (no stats model; fair vs ask) */
 const CATALOG_THRESHOLDS = {
-  minModelProbability: 0.05,
   minEvPercent: -8,
   maxInjuryUncertainty: 0.85,
 } as const;
@@ -45,6 +47,7 @@ const DIVERSIFY = {
 
 export type FilterRejectReason =
   | "low_model_probability"
+  | "low_yes_ask"
   | "low_ev"
   | "low_pitcher_innings"
   | "high_injury_uncertainty";
@@ -189,7 +192,11 @@ export function filterBadBets(bets: KalshiBet[]): {
 
   for (const bet of bets) {
     const t = thresholdsFor(bet);
-    if (bet.modelProbability < t.minModelProbability) {
+    if (bet.modelProbability < MIN_MODEL_PROBABILITY) {
+      rejected++;
+      continue;
+    }
+    if (bet.yesAsk < MIN_YES_ASK) {
       rejected++;
       continue;
     }
