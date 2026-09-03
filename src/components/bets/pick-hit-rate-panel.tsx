@@ -1,10 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Download } from "lucide-react";
-import { KALSHI_SPORT_KEYS } from "@/types/kalshi";
-import type { KalshiSportKey, PickHitRateStats, RecommendedPick } from "@/types/kalshi";
-import { cn } from "@/lib/utils";
+import type { PickHitRateStats, RecommendedPick } from "@/types/kalshi";
 
 function pct(rate: number): string {
   return `${(rate * 100).toFixed(1)}%`;
@@ -16,37 +12,11 @@ function statusColor(status: RecommendedPick["status"]): string {
   return "text-zinc-400";
 }
 
-const EXPORT_WINDOWS = [
-  { label: "24h", hours: 24 },
-  { label: "7d", hours: 24 * 7 },
-  { label: "30d", hours: 24 * 30 },
-] as const;
-
 export function PickHitRatePanel({ stats }: { stats: PickHitRateStats }) {
   const sportRows = Object.entries(stats.bySport).sort((a, b) =>
     a[0].localeCompare(b[0])
   );
-  const [exportSports, setExportSports] = useState<Set<KalshiSportKey>>(
-    () => new Set()
-  );
-  const [exportHours, setExportHours] = useState<number>(24);
-
-  function toggleExportSport(sport: KalshiSportKey) {
-    setExportSports((prev) => {
-      const next = new Set(prev);
-      if (next.has(sport)) next.delete(sport);
-      else next.add(sport);
-      return next;
-    });
-  }
-
-  const exportHref = useMemo(() => {
-    const params = new URLSearchParams({ hours: String(exportHours) });
-    if (exportSports.size > 0) {
-      params.set("sport", [...exportSports].join(","));
-    }
-    return `/api/kalshi/picks/export?${params.toString()}`;
-  }, [exportHours, exportSports]);
+  const trends = stats.trends;
 
   return (
     <section
@@ -74,47 +44,41 @@ export function PickHitRatePanel({ stats }: { stats: PickHitRateStats }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-white/5 pt-3">
-        <span className="text-xs font-medium text-zinc-500">Export picks:</span>
-        {EXPORT_WINDOWS.map((w) => (
-          <button
-            key={w.hours}
-            type="button"
-            onClick={() => setExportHours(w.hours)}
-            className={cn(
-              "rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
-              exportHours === w.hours
-                ? "bg-sky-500/20 text-sky-400"
-                : "bg-white/5 text-zinc-400 hover:text-zinc-200"
-            )}
-          >
-            {w.label}
-          </button>
-        ))}
-        <span className="mx-1 h-4 w-px bg-white/10" />
-        {KALSHI_SPORT_KEYS.map((sport) => (
-          <button
-            key={sport}
-            type="button"
-            onClick={() => toggleExportSport(sport)}
-            className={cn(
-              "rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
-              exportSports.has(sport)
-                ? "bg-emerald-500/20 text-emerald-400"
-                : "bg-white/5 text-zinc-400 hover:text-zinc-200"
-            )}
-          >
-            {sport}
-          </button>
-        ))}
-        <a
-          href={exportHref}
-          className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-500/30"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Download CSV
-        </a>
-      </div>
+      {trends && (
+        <div className="space-y-3 border-t border-white/5 pt-3">
+          <span className="text-xs font-medium text-zinc-500">
+            Trend analysis
+          </span>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {trends.windows.map((w) => (
+              <div
+                key={w.window}
+                className="rounded-lg border border-white/10 bg-zinc-950/40 p-3"
+              >
+                <p className="text-[10px] uppercase tracking-wider text-zinc-500">
+                  {w.label}
+                </p>
+                <p className="mt-0.5 text-xs text-zinc-300">{w.summary}</p>
+                {w.bullets.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {w.bullets.map((bullet) => (
+                      <li key={bullet} className="text-xs text-amber-400">
+                        {bullet}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+          {trends.exclusionRules.length > 0 && (
+            <p className="text-xs text-zinc-500">
+              Excluding from next batch:{" "}
+              {trends.exclusionRules.map((r) => r.reason).join(", ")}
+            </p>
+          )}
+        </div>
+      )}
 
       {sportRows.length > 0 && (
         <div className="flex flex-wrap gap-2">

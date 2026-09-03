@@ -321,6 +321,43 @@ describe("selectKalshiPortfolio", () => {
   });
 });
 
+describe("exclusion rules", () => {
+  it("rejects bets matching a trend exclusion rule", () => {
+    const { survivors, rejected } = filterBadBets(
+      [makeBet({ statType: "points" })],
+      [
+        {
+          dimension: "statType",
+          value: "points",
+          hitRate: 0.2,
+          settled: 5,
+          windows: ["1d"],
+          reason: "points props",
+        },
+      ]
+    );
+    expect(survivors).toHaveLength(0);
+    expect(rejected).toBe(1);
+  });
+
+  it("leaves bets untouched when no rule matches", () => {
+    const { survivors } = filterBadBets(
+      [makeBet({ statType: "points" })],
+      [
+        {
+          dimension: "statType",
+          value: "rebounds",
+          hitRate: 0.2,
+          settled: 5,
+          windows: ["1d"],
+          reason: "rebounds props",
+        },
+      ]
+    );
+    expect(survivors).toHaveLength(1);
+  });
+});
+
 describe("computeVolatility", () => {
   it("returns higher volatility for scattered values", () => {
     const stable = computeVolatility([10, 11, 10, 11, 10]);

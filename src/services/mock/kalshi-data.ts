@@ -1,5 +1,6 @@
-import type { KalshiBet, KalshiBetsResponse } from "@/types/kalshi";
+import type { KalshiBet, KalshiBetsResponse, RecommendedPick } from "@/types/kalshi";
 import { selectKalshiPortfolio } from "@/services/kalshi/portfolio-select";
+import { analyzePickTrends } from "@/services/kalshi/pick-trends";
 
 const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 const expires = new Date(Date.now() + 86400000 * 2).toISOString();
@@ -230,20 +231,7 @@ export const mockKalshiBets: KalshiBet[] = [
 function mockPickHitRate(): KalshiBetsResponse["pickHitRate"] {
   const settledAt = new Date(Date.now() - 86400000).toISOString();
   const recommendedAt = new Date(Date.now() - 172800000).toISOString();
-  return {
-    settled: 24,
-    wins: 14,
-    losses: 10,
-    pending: 3,
-    hitRate: 14 / 24,
-    bySport: {
-      NBA: { settled: 8, wins: 5, hitRate: 5 / 8 },
-      MLB: { settled: 9, wins: 5, hitRate: 5 / 9 },
-      NFL: { settled: 4, wins: 2, hitRate: 0.5 },
-      SOCCER: { settled: 2, wins: 1, hitRate: 0.5 },
-      TENNIS: { settled: 1, wins: 1, hitRate: 1 },
-    },
-    recent: [
+  const recent: RecommendedPick[] = [
       {
         marketTicker: "MOCK-NBA-PTS-SETTLED-1",
         sport: "NBA",
@@ -284,7 +272,22 @@ function mockPickHitRate(): KalshiBetsResponse["pickHitRate"] {
         settledAt,
         result: "no",
       },
-    ],
+    ];
+  return {
+    settled: 24,
+    wins: 14,
+    losses: 10,
+    pending: 3,
+    hitRate: 14 / 24,
+    bySport: {
+      NBA: { settled: 8, wins: 5, hitRate: 5 / 8 },
+      MLB: { settled: 9, wins: 5, hitRate: 5 / 9 },
+      NFL: { settled: 4, wins: 2, hitRate: 0.5 },
+      SOCCER: { settled: 2, wins: 1, hitRate: 0.5 },
+      TENNIS: { settled: 1, wins: 1, hitRate: 1 },
+    },
+    recent,
+    trends: analyzePickTrends(recent),
   };
 }
 

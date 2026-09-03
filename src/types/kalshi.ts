@@ -1,3 +1,5 @@
+import type { PickTrendReport } from "@/services/kalshi/pick-trends";
+
 export type KalshiSportKey = "MLB" | "NFL" | "NBA" | "SOCCER" | "TENNIS";
 
 export const KALSHI_SPORT_KEYS: KalshiSportKey[] = [
@@ -105,6 +107,7 @@ export interface PickHitRateStats {
   hitRate: number;
   bySport: Partial<Record<KalshiSportKey, SportHitRate>>;
   recent: RecommendedPick[];
+  trends: PickTrendReport;
 }
 
 export interface KalshiBetsResponse {

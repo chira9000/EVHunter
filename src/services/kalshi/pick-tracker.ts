@@ -7,6 +7,8 @@ import type {
   SportHitRate,
 } from "@/types/kalshi";
 import { fetchMarketByTicker } from "./client";
+import { analyzePickTrends } from "./pick-trends";
+import type { ExclusionRule } from "./portfolio-select";
 
 const STORE_KEY = "kalshi:recommended-picks";
 const STORE_TTL_SEC = 60 * 60 * 24 * 45; // 45 days
@@ -100,7 +102,8 @@ export function isReadyToSettle(pick: RecommendedPick, now = Date.now()): boolea
 
 export function computePickHitRateStats(
   picks: RecommendedPick[],
-  recentLimit = RECENT_LIMIT
+  recentLimit = RECENT_LIMIT,
+  now = new Date()
 ): PickHitRateStats {
   let wins = 0;
   let losses = 0;
@@ -153,27 +156,8 @@ export function computePickHitRateStats(
     hitRate: settled > 0 ? wins / settled : 0,
     bySport,
     recent,
+    trends: analyzePickTrends(picks, now),
   };
-}
-
-/** Picks recommended within the trailing window, optionally narrowed to specific sports. */
-export function filterPicksForExport(
-  picks: RecommendedPick[],
-  options?: { sinceHours?: number; sports?: KalshiSportKey[]; now?: Date }
-): RecommendedPick[] {
-  const sinceHours = options?.sinceHours ?? 24;
-  const now = options?.now ?? new Date();
-  const cutoff = now.getTime() - sinceHours * 60 * 60 * 1000;
-  const sports = options?.sports?.length ? new Set(options.sports) : null;
-
-  return picks
-    .filter((p) => {
-      const recommendedAt = new Date(p.recommendedAt).getTime();
-      if (Number.isNaN(recommendedAt) || recommendedAt < cutoff) return false;
-      if (sports && !sports.has(p.sport)) return false;
-      return true;
-    })
-    .sort((a, b) => b.recommendedAt.localeCompare(a.recommendedAt));
 }
 
 async function loadPicks(): Promise<RecommendedPick[]> {
@@ -238,12 +222,10 @@ export async function getPickHitRateStats(): Promise<PickHitRateStats> {
   return computePickHitRateStats(picks);
 }
 
-export async function getRecommendedPicksForExport(options?: {
-  sinceHours?: number;
-  sports?: KalshiSportKey[];
-}): Promise<RecommendedPick[]> {
+/** Losing trends learned from settled picks — applied as hard filters on the next portfolio selection. */
+export async function getActivePickExclusionRules(): Promise<ExclusionRule[]> {
   const picks = await loadPicks();
-  return filterPicksForExport(picks, options);
+  return analyzePickTrends(picks).exclusionRules;
 }
 
 /** Record portfolio, settle due picks, return aggregate stats. */

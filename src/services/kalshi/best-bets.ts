@@ -18,6 +18,7 @@ import {
   scorePlayerProp,
 } from "./model-scoring";
 import { selectKalshiPortfolio } from "./portfolio-select";
+import { getActivePickExclusionRules } from "./pick-tracker";
 
 /** Upcoming game window (hours) for daily slate */
 const DAILY_HORIZON_HOURS = 96;
@@ -329,7 +330,8 @@ export async function fetchKalshiBestBets(): Promise<{
   );
 
   const all = [...gameResults.flat(), ...propResults.flat()];
-  const portfolio = selectKalshiPortfolio(all);
+  const exclusionRules = await getActivePickExclusionRules();
+  const portfolio = selectKalshiPortfolio(all, exclusionRules);
 
   return {
     bets: portfolio.bets,

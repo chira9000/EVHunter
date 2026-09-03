@@ -1,5 +1,5 @@
 import { kellyCriterion } from "@/lib/betting-math";
-import type { KalshiBet } from "@/types/kalshi";
+import type { KalshiBet, KalshiBetType, KalshiSportKey } from "@/types/kalshi";
 import { isCatalogMoneyline } from "@/types/kalshi";
 import { parsePropTitle, teamAbbrFromMarketTicker } from "./prop-parser";
 
@@ -50,7 +50,109 @@ export type FilterRejectReason =
   | "low_yes_ask"
   | "low_ev"
   | "low_pitcher_innings"
-  | "high_injury_uncertainty";
+  | "high_injury_uncertainty"
+  | "trend_exclusion";
+
+/**
+ * Segment dimensions used to detect losing trends and exclude matching bets
+ * from future portfolios. Kept narrow/composite (rather than bare "betType")
+ * so a rule targets a specific slice instead of an entire bet-type wholesale.
+ */
+export type TrendDimension =
+  | "sport"
+  | "sport_betType"
+  | "statType"
+  | "edgeBucket"
+  | "probabilityBucket";
+
+export interface DimensionSegment {
+  dimension: TrendDimension;
+  value: string;
+}
+
+/** A learned rule to exclude a losing segment from the next batch of picks. */
+export interface ExclusionRule {
+  dimension: TrendDimension;
+  value: string;
+  hitRate: number;
+  settled: number;
+  /** Trend windows ("1d" | "2d" | "all") that flagged this segment. */
+  windows: string[];
+  /** Human-readable description of the excluded segment, e.g. "MLB strikeouts props". */
+  reason: string;
+}
+
+/** Fields needed to bucket a bet/pick into trend segments — satisfied by both KalshiBet and RecommendedPick. */
+export interface SegmentableBet {
+  sport: KalshiSportKey;
+  betType: KalshiBetType;
+  statType?: string;
+  edgePercent: number;
+  modelProbability: number;
+}
+
+function edgeBucket(edgePercent: number): string {
+  if (edgePercent < 0) return "<0%";
+  if (edgePercent < 5) return "0-5%";
+  if (edgePercent < 10) return "5-10%";
+  if (edgePercent < 20) return "10-20%";
+  return "20%+";
+}
+
+function probabilityBucket(modelProbability: number): string {
+  if (modelProbability < 0.55) return "50-55%";
+  if (modelProbability < 0.6) return "55-60%";
+  if (modelProbability < 0.7) return "60-70%";
+  return "70%+";
+}
+
+/** The dimension segments a bet/pick belongs to, for trend aggregation and exclusion matching. */
+export function segmentsFor(bet: SegmentableBet): DimensionSegment[] {
+  const segments: DimensionSegment[] = [
+    { dimension: "sport", value: bet.sport },
+    { dimension: "sport_betType", value: `${bet.sport}:${bet.betType}` },
+    { dimension: "edgeBucket", value: edgeBucket(bet.edgePercent) },
+    { dimension: "probabilityBucket", value: probabilityBucket(bet.modelProbability) },
+  ];
+  if (bet.statType) segments.push({ dimension: "statType", value: bet.statType });
+  return segments;
+}
+
+/** Human-readable label for a segment, used in trend narratives and exclusion reasons. */
+export function describeSegment(dimension: TrendDimension, value: string): string {
+  switch (dimension) {
+    case "sport":
+      return `${value} picks`;
+    case "sport_betType": {
+      const [sport, betType] = value.split(":");
+      return `${sport} ${betType === "moneyline" ? "moneylines" : "player props"}`;
+    }
+    case "statType":
+      return `${value} props`;
+    case "edgeBucket":
+      return `picks in the ${value} model-edge range`;
+    case "probabilityBucket":
+      return `picks in the ${value} model-probability range`;
+  }
+}
+
+/** Whether a bet falls into a segment an exclusion rule flagged. */
+export function matchesExclusionRule(
+  bet: SegmentableBet,
+  rule: ExclusionRule
+): boolean {
+  return segmentsFor(bet).some(
+    (s) => s.dimension === rule.dimension && s.value === rule.value
+  );
+}
+
+export function bearsActiveExclusion(
+  bet: SegmentableBet,
+  rules: ExclusionRule[]
+): ExclusionRule | undefined {
+  if (rules.length === 0) return undefined;
+  return rules.find((rule) => matchesExclusionRule(bet, rule));
+}
 
 export interface PortfolioBet extends KalshiBet {
   volatility: number;
@@ -182,8 +284,11 @@ function adjustedQualityScore(
   return bet.qualityScore - DIVERSIFY.correlationPenalty * corr;
 }
 
-/** Step 1 — remove bets that fail hard filters */
-export function filterBadBets(bets: KalshiBet[]): {
+/** Step 1 — remove bets that fail hard filters or match a learned losing trend */
+export function filterBadBets(
+  bets: KalshiBet[],
+  exclusionRules: ExclusionRule[] = []
+): {
   survivors: KalshiBet[];
   rejected: number;
 } {
@@ -212,6 +317,10 @@ export function filterBadBets(bets: KalshiBet[]): {
       continue;
     }
     if ((bet.injuryUncertainty ?? 0) > t.maxInjuryUncertainty) {
+      rejected++;
+      continue;
+    }
+    if (bearsActiveExclusion(bet, exclusionRules)) {
       rejected++;
       continue;
     }
@@ -368,8 +477,11 @@ export function diversifyPortfolio(ranked: PortfolioBet[]): PortfolioBet[] {
 }
 
 /** Full pipeline: filter → score → dedupe → diversify */
-export function selectKalshiPortfolio(bets: KalshiBet[]): PortfolioSelectResult {
-  const { survivors, rejected } = filterBadBets(bets);
+export function selectKalshiPortfolio(
+  bets: KalshiBet[],
+  exclusionRules: ExclusionRule[] = []
+): PortfolioSelectResult {
+  const { survivors, rejected } = filterBadBets(bets, exclusionRules);
   const ranked = rankByQualityScore(survivors);
   const { bets: deduped, removed: dedupedCount } =
     deduplicateEquivalentMarkets(ranked);
