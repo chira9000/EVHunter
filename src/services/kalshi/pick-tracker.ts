@@ -9,6 +9,7 @@ import type {
 import { fetchMarketByTicker } from "./client";
 import { analyzePickTrends } from "./pick-trends";
 import type { ExclusionRule } from "./portfolio-select";
+import { buildCalibrationModel, type CalibrationModel } from "./calibration";
 
 const STORE_KEY = "kalshi:recommended-picks";
 const STORE_TTL_SEC = 60 * 60 * 24 * 45; // 45 days
@@ -226,6 +227,12 @@ export async function getPickHitRateStats(): Promise<PickHitRateStats> {
 export async function getActivePickExclusionRules(): Promise<ExclusionRule[]> {
   const picks = await loadPicks();
   return analyzePickTrends(picks).exclusionRules;
+}
+
+/** Empirical probability calibration built from settled pick history — used to correct raw model probabilities (e.g. in parlay scoring). */
+export async function getPickCalibrationModel(): Promise<CalibrationModel> {
+  const picks = await loadPicks();
+  return buildCalibrationModel(picks);
 }
 
 /** Record portfolio, settle due picks, return aggregate stats. */

@@ -102,17 +102,52 @@ describe("analyzeParlay", () => {
 
     expect(result.legCount).toBe(2);
     expect(result.matchedCount).toBe(2);
-    expect(result.rating).toBeGreaterThanOrEqual(1);
-    expect(result.rating).toBeLessThanOrEqual(10);
+    expect(result.qualityScore).toBeGreaterThanOrEqual(0);
+    expect(["excellent", "good", "fair", "poor"]).toContain(result.qualityLabel);
     expect(result.analysis.length).toBeGreaterThan(50);
     expect(result.impliedProbability).toBeGreaterThan(0);
-    expect(result.modelProbability).toBeGreaterThan(0);
+    expect(result.parlayProbability).toBeGreaterThan(0);
+    expect(result.breakEvenProbability).toBeGreaterThan(0);
+    expect(result.legs[0]!.calibratedProbability).toBeGreaterThan(0);
+    expect(["low", "medium", "high"]).toContain(result.correlationRisk);
   });
 
   it("handles empty input", () => {
     const result = analyzeParlay("   ");
     expect(result.legCount).toBe(0);
-    expect(result.rating).toBe(1);
+    expect(result.qualityScore).toBe(0);
+    expect(result.qualityLabel).toBe("poor");
     expect(result.warnings.length).toBeGreaterThan(0);
+  });
+
+  it("uses offered odds when provided instead of estimating from leg prices", () => {
+    const catalog = [makeBet()];
+    const result = analyzeParlay("Jayson Tatum 28+ points", catalog, {
+      offeredDecimalOdds: 3,
+    });
+    expect(result.offeredOddsSource).toBe("user");
+    expect(result.decimalOdds).toBe(3);
+    expect(result.breakEvenProbability).toBeCloseTo(1 / 3);
+  });
+
+  it("does not naively multiply probabilities for a same-game correlated pair", () => {
+    const sameGame = [
+      makeBet({ id: "A", eventTicker: "G1", playerName: "Star A", modelProbability: 0.6 }),
+      makeBet({
+        id: "B",
+        eventTicker: "G1",
+        playerName: "Star B",
+        marketTicker: "T2",
+        modelProbability: 0.6,
+      }),
+    ];
+    const result = analyzeParlay(
+      "Jayson Tatum 28+ points, Star B 28+ points",
+      sameGame
+    );
+    const naiveProduct = 0.6 * 0.6;
+    // Correlation-adjusted joint probability should exceed the naive independent product.
+    expect(result.parlayProbability).toBeGreaterThan(naiveProduct);
+    expect(result.correlationRisk).not.toBe("low");
   });
 });

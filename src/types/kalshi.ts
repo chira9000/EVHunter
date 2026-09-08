@@ -1,4 +1,5 @@
 import type { PickTrendReport } from "@/services/kalshi/pick-trends";
+import type { ParlayScoringWeights } from "@/services/kalshi/parlay-scoring";
 
 export type KalshiSportKey = "MLB" | "NFL" | "NBA" | "SOCCER" | "TENNIS";
 
@@ -125,24 +126,62 @@ export interface ParlayLegAnalysis {
   raw: string;
   label: string;
   matched: boolean;
+  sport?: KalshiSportKey;
+  statType?: string;
   impliedProbability: number;
+  /** Raw model probability, before historical calibration. */
   modelProbability: number;
+  /** Model probability after blending toward the empirical hit rate of its segment (sport/statType/etc). */
+  calibratedProbability: number;
+  /** 0–1 — how much weight settled history got vs. the raw model probability for this leg. */
+  calibrationConfidence: number;
+  calibrationSampleSize: number;
+  poorlyCalibrated: boolean;
   edgePercent: number;
   confidence: number;
   americanOdds: number;
 }
+
+export interface ParlayPairwiseCorrelation {
+  legAIndex: number;
+  legBIndex: number;
+  legALabel: string;
+  legBLabel: string;
+  correlation: number;
+  uncertain: boolean;
+}
+
+export type ParlayCorrelationRisk = "low" | "medium" | "high";
+export type ParlayQualityLabel = "excellent" | "good" | "fair" | "poor";
 
 export interface ParlayAnalysisResult {
   legs: ParlayLegAnalysis[];
   legCount: number;
   matchedCount: number;
   combinedAmericanOdds: number;
+  /** Product of book-implied leg probabilities. */
   impliedProbability: number;
-  modelProbability: number;
+  /** Calibrated joint hit probability, correlation-adjusted (not a naive product for correlated legs). */
+  parlayProbability: number;
+  /** 1 / decimalOdds for the priced (offered or estimated) payout. */
+  breakEvenProbability: number;
+  decimalOdds: number;
+  offeredOddsSource: "user" | "estimated";
+  /** (parlayProbability * decimalOdds) - 1, as a fraction (0.12 = +12%). */
+  expectedValue: number;
+  /** expectedValue expressed as a percent, for reuse with existing EV formatters. */
   edgePercent: number;
   avgCorrelation: number;
   avgLegEdge: number;
-  rating: number;
+  avgLegConfidence: number;
+  pairwiseCorrelations: ParlayPairwiseCorrelation[];
+  correlationRisk: ParlayCorrelationRisk;
+  correlationFactor: number;
+  confidenceFactor: number;
+  qualityScore: number;
+  qualityLabel: ParlayQualityLabel;
+  /** Exact weights used for this scoring run — kept for backtest reproducibility. */
+  weightsUsed: ParlayScoringWeights;
   analysis: string;
   warnings: string[];
 }

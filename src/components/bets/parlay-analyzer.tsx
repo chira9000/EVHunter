@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
-import type { ParlayAnalysisResult } from "@/types/kalshi";
+import type { ParlayAnalysisResult, ParlayCorrelationRisk, ParlayQualityLabel } from "@/types/kalshi";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,22 +12,30 @@ import { formatAmericanOdds, formatEvPercent } from "@/lib/betting-math";
 const EXAMPLE =
   "Jayson Tatum 28+ points, Milwaukee Bucks ML, Aaron Judge 1+ hits";
 
-function ratingColor(rating: number): string {
-  if (rating >= 8) return "text-emerald-400";
-  if (rating >= 6) return "text-lime-400";
-  if (rating >= 4) return "text-amber-400";
+function pct(p: number): string {
+  return `${(p * 100).toFixed(1)}%`;
+}
+
+function qualityColor(label: ParlayQualityLabel): string {
+  if (label === "excellent") return "text-emerald-400";
+  if (label === "good") return "text-lime-400";
+  if (label === "fair") return "text-amber-400";
   return "text-red-400";
 }
 
-function ratingLabel(rating: number): string {
-  if (rating >= 8) return "Strong";
-  if (rating >= 6) return "Solid";
-  if (rating >= 4) return "Mixed";
-  return "Weak";
+function qualityText(label: ParlayQualityLabel): string {
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function correlationColor(risk: ParlayCorrelationRisk): string {
+  if (risk === "low") return "text-emerald-400";
+  if (risk === "medium") return "text-amber-400";
+  return "text-red-400";
 }
 
 export function ParlayAnalyzer() {
   const [text, setText] = useState("");
+  const [offeredOdds, setOfferedOdds] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ParlayAnalysisResult | null>(null);
@@ -37,10 +45,19 @@ export function ParlayAnalyzer() {
     setLoading(true);
     setError(null);
     try {
+      const offeredAmericanOdds = offeredOdds.trim()
+        ? Number(offeredOdds.trim().replace(/^\+/, ""))
+        : undefined;
       const res = await fetch("/api/kalshi/parlays", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text,
+          offeredAmericanOdds:
+            offeredAmericanOdds != null && Number.isFinite(offeredAmericanOdds)
+              ? offeredAmericanOdds
+              : undefined,
+        }),
       });
       const data = (await res.json()) as ParlayAnalysisResult & { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Analysis failed");
@@ -68,6 +85,17 @@ export function ParlayAnalyzer() {
               rows={8}
               className="w-full resize-y rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500/40 focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
             />
+            <div>
+              <label className="mb-1 block text-xs text-zinc-500">
+                Offered odds (optional — American, e.g. +450)
+              </label>
+              <input
+                value={offeredOdds}
+                onChange={(e) => setOfferedOdds(e.target.value)}
+                placeholder="Leave blank to estimate from leg prices"
+                className="w-full rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500/40 focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+              />
+            </div>
             <div className="flex flex-wrap gap-2">
               <Button onClick={analyze} disabled={loading || !text.trim()}>
                 {loading ? (
@@ -87,8 +115,9 @@ export function ParlayAnalyzer() {
               </Button>
             </div>
             <p className="text-xs text-zinc-600">
-              Legs are matched against live Kalshi model edges when possible. Unmatched
-              picks use neutral estimates.
+              Legs are matched against live Kalshi model edges when possible and
+              calibrated against settled pick history. Unmatched picks use neutral
+              estimates.
             </p>
           </CardContent>
         </Card>
@@ -103,7 +132,7 @@ export function ParlayAnalyzer() {
 
         {!result && !loading && !error && (
           <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-white/10 text-sm text-zinc-600">
-            Enter a combo and click Analyze to get a rating and breakdown.
+            Enter a combo and click Analyze to get a quality score and breakdown.
           </div>
         )}
 
@@ -113,46 +142,58 @@ export function ParlayAnalyzer() {
               <CardContent className="flex flex-wrap items-center gap-6 p-6">
                 <div className="text-center">
                   <p className="text-xs uppercase tracking-wider text-zinc-500">
-                    Parlay rating
+                    Quality score
                   </p>
                   <p
                     className={cn(
                       "font-mono text-5xl font-bold tabular-nums",
-                      ratingColor(result.rating)
+                      qualityColor(result.qualityLabel)
                     )}
                   >
-                    {result.rating.toFixed(1)}
-                    <span className="text-2xl text-zinc-600">/10</span>
+                    {result.qualityScore.toFixed(3)}
                   </p>
-                  <p className={cn("text-sm font-medium", ratingColor(result.rating))}>
-                    {ratingLabel(result.rating)}
+                  <p className={cn("text-sm font-medium", qualityColor(result.qualityLabel))}>
+                    {qualityText(result.qualityLabel)}
                   </p>
                 </div>
                 <div className="grid flex-1 gap-3 sm:grid-cols-2">
                   {[
                     {
-                      label: "Combined odds",
-                      value: formatAmericanOdds(result.combinedAmericanOdds),
+                      label: "Calibrated hit %",
+                      value: pct(result.parlayProbability),
                     },
                     {
-                      label: "Model hit %",
-                      value: `${(result.modelProbability * 100).toFixed(1)}%`,
+                      label: "Break-even %",
+                      value: pct(result.breakEvenProbability),
                     },
                     {
-                      label: "Implied hit %",
-                      value: `${(result.impliedProbability * 100).toFixed(1)}%`,
-                    },
-                    {
-                      label: "Parlay EV",
+                      label: "Expected value",
                       value: formatEvPercent(result.edgePercent),
                     },
                     {
-                      label: "Avg leg edge",
-                      value: formatEvPercent(result.avgLegEdge),
+                      label: `Odds (${result.offeredOddsSource === "user" ? "offered" : "estimated"})`,
+                      value: formatAmericanOdds(result.combinedAmericanOdds),
                     },
                     {
-                      label: "Correlation",
-                      value: `${(result.avgCorrelation * 100).toFixed(0)}%`,
+                      label: "Legs",
+                      value: `${result.legCount} (${result.matchedCount} matched)`,
+                    },
+                    {
+                      label: "Avg leg confidence",
+                      value: pct(result.avgLegConfidence),
+                    },
+                    {
+                      label: "Correlation risk",
+                      value: (
+                        <span className={correlationColor(result.correlationRisk)}>
+                          {result.correlationRisk.charAt(0).toUpperCase() +
+                            result.correlationRisk.slice(1)}
+                        </span>
+                      ),
+                    },
+                    {
+                      label: "Confidence factor",
+                      value: result.confidenceFactor.toFixed(2),
                     },
                   ].map((stat) => (
                     <div
@@ -213,11 +254,25 @@ export function ParlayAnalyzer() {
                           Unmatched
                         </Badge>
                       )}
+                      {leg.poorlyCalibrated && (
+                        <Badge
+                          variant="secondary"
+                          className="border-amber-500/30 bg-amber-500/10 text-amber-300"
+                        >
+                          Calibration shift
+                        </Badge>
+                      )}
                       <span className="font-mono text-xs text-zinc-400">
                         {formatAmericanOdds(leg.americanOdds)}
                       </span>
-                      <span className="font-mono text-xs text-emerald-400/90">
-                        {formatEvPercent(leg.edgePercent)}
+                      <span className="font-mono text-xs text-zinc-400" title="Raw model probability">
+                        {pct(leg.modelProbability)}
+                      </span>
+                      <span
+                        className="font-mono text-xs text-emerald-400/90"
+                        title="Calibrated probability"
+                      >
+                        → {pct(leg.calibratedProbability)}
                       </span>
                     </div>
                   </div>
