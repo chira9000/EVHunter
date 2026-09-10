@@ -9,16 +9,38 @@ import {
 } from "./parlay-scoring";
 
 const DEFAULT_IMPLIED = 0.52;
-const DEFAULT_MODEL = 0.48;
-const DEFAULT_CONFIDENCE = 0.35;
+// Neutral (no assumed edge) rather than negative — an unmatched leg shouldn't be
+// treated as a bad bet by default, just an unknown one.
+const DEFAULT_MODEL = 0.52;
+const DEFAULT_CONFIDENCE = 0.45;
 
 function normalizeText(value: string): string {
   return value
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
     .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .trim()
     .replace(/\s+/g, " ");
+}
+
+const MONEYLINE_NOISE = /\b(money ?line|ml|to win|straight up|su|win|the)\b/g;
+
+/** Strip odds/qualifier noise so "Bucks ML" and "Milwaukee Bucks" reduce to comparable team text. */
+function normalizeTeamText(value: string): string {
+  return normalizeText(value)
+    .replace(MONEYLINE_NOISE, " ")
+    .replace(/\b\d{2,4}\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** True when the two team strings share a distinctive word (city or nickname), e.g. "bucks" in both. */
+function teamNamesOverlap(a: string, b: string): boolean {
+  const wordsA = a.split(" ").filter((w) => w.length >= 3);
+  const wordsB = new Set(b.split(" ").filter((w) => w.length >= 3));
+  return wordsA.some((w) => wordsB.has(w));
 }
 
 /** Split free-text parlay input into individual legs. */
@@ -34,16 +56,29 @@ function tryParseInformalProp(text: string): ParsedKalshiProp | null {
   const fromTitle = parsePropTitle(text);
   if (fromTitle) return fromTitle;
 
-  const match = text.match(/^(.+?)\s+(\d+)\+\s*(.+)$/i);
-  if (!match) return null;
+  // "Name 3+ stat"
+  const plusMatch = text.match(/^(.+?)\s+(\d+)\+\s*(.+)$/i);
+  if (plusMatch) {
+    const playerName = plusMatch[1]!.trim();
+    const line = parseInt(plusMatch[2]!, 10);
+    const statRaw = plusMatch[3]!.trim().toLowerCase();
+    if (!Number.isFinite(line)) return null;
+    return parsePropTitle(`${playerName}: ${line}+ ${statRaw}`);
+  }
 
-  const playerName = match[1]!.trim();
-  const line = parseInt(match[2]!, 10);
-  const statRaw = match[3]!.trim().toLowerCase();
-  if (!Number.isFinite(line)) return null;
+  // "Name over 2.5 stat" / "Name o2 stat" — over/under phrasing, converted to
+  // the equivalent Kalshi "N+" threshold (over 2.5 → 3+, over 2 → 3+).
+  const overMatch = text.match(/^(.+?)\s+(?:over|o)\s*(\d+(?:\.5)?)\s+(.+)$/i);
+  if (overMatch) {
+    const playerName = overMatch[1]!.trim();
+    const rawLine = parseFloat(overMatch[2]!);
+    const statRaw = overMatch[3]!.trim().toLowerCase();
+    if (!Number.isFinite(rawLine)) return null;
+    const line = Number.isInteger(rawLine) ? rawLine + 1 : Math.ceil(rawLine);
+    return parsePropTitle(`${playerName}: ${line}+ ${statRaw}`);
+  }
 
-  const colonForm = parsePropTitle(`${playerName}: ${line}+ ${statRaw}`);
-  return colonForm;
+  return null;
 }
 
 function legMatchScore(parsed: ParsedKalshiProp, bet: KalshiBet): number {
@@ -94,12 +129,17 @@ export function matchLegToBet(legText: string, bets: KalshiBet[]): KalshiBet | u
     if (bestScore >= 4) return best;
   }
 
+  const normTeam = normalizeTeamText(legText);
   for (const bet of bets) {
     if (bet.betType !== "moneyline") continue;
-    const team = normalizeText(bet.selection);
-    if (norm === team || norm.includes(team) || team.includes(norm)) return bet;
-    if (bet.matchup && norm.includes(normalizeText(bet.matchup.split("@")[0] ?? ""))) {
-      return bet;
+    const team = normalizeTeamText(bet.selection);
+    if (normTeam === team || normTeam.includes(team) || team.includes(normTeam)) return bet;
+    if (teamNamesOverlap(normTeam, team)) return bet;
+    if (bet.matchup) {
+      const matchupTeam = normalizeTeamText(bet.matchup.split("@")[0] ?? "");
+      if (matchupTeam && (normTeam.includes(matchupTeam) || teamNamesOverlap(normTeam, matchupTeam))) {
+        return bet;
+      }
     }
   }
 

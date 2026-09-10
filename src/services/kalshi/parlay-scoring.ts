@@ -30,13 +30,13 @@ export interface ParlayScoringWeights {
 }
 
 export const DEFAULT_PARLAY_SCORING_WEIGHTS: ParlayScoringWeights = {
-  lambdaCorrelation: 0.35,
-  uncertainCorrelationDefault: 0.25,
-  uncertainCorrelationPenalty: 0.15,
-  legCountConfidenceDecay: 0.93,
-  correlationRiskThresholds: { medium: 0.35, high: 0.6 },
-  poorCalibrationShiftThreshold: 0.06,
-  qualityScoreThresholds: { good: 0.05, fair: 0.015 },
+  lambdaCorrelation: 0.22,
+  uncertainCorrelationDefault: 0.15,
+  uncertainCorrelationPenalty: 0.08,
+  legCountConfidenceDecay: 0.96,
+  correlationRiskThresholds: { medium: 0.4, high: 0.65 },
+  poorCalibrationShiftThreshold: 0.09,
+  qualityScoreThresholds: { good: 0.035, fair: 0.01 },
 };
 
 export type CorrelationRisk = "low" | "medium" | "high";
@@ -313,7 +313,7 @@ export function scoreParlay(
   // Calibration confidence softly modulates rather than zeroing out reliability
   // when a segment simply lacks settled history yet.
   const confidenceFactor = clamp01(
-    avgLegConfidence * (0.4 + 0.6 * avgCalibrationConfidence) * legCountDecay
+    avgLegConfidence * (0.55 + 0.45 * avgCalibrationConfidence) * legCountDecay
   );
 
   const qualityScore =
