@@ -1,6 +1,14 @@
+import type { Sport } from "@prisma/client";
 import type { KalshiBet, KalshiBetsResponse, RecommendedPick } from "@/types/kalshi";
+import { getModel } from "@/models/rolling-average-model";
 import { selectKalshiPortfolio } from "@/services/kalshi/portfolio-select";
 import { analyzePickTrends } from "@/services/kalshi/pick-trends";
+import {
+  matchesPlayer,
+  STAT_LABELS,
+  type PlayerSearchResult,
+} from "@/services/kalshi/player-search";
+import { teamAbbrFromMarketTicker } from "@/services/kalshi/prop-parser";
 
 const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 const expires = new Date(Date.now() + 86400000 * 2).toISOString();
@@ -304,5 +312,87 @@ export function getMockKalshiBetsResponse(): KalshiBetsResponse {
     filteredCount: portfolio.filteredCount,
     survivorCount: portfolio.survivorCount,
     pickHitRate: mockPickHitRate(),
+  };
+}
+
+/** Deterministic pseudo-random game log around a bet's line, for mock-mode player search. */
+function mockGameLog(seed: string, anchor: number, games = 10): number[] {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  const values: number[] = [];
+  for (let i = 0; i < games; i++) {
+    h = (h * 1103515245 + 12345) >>> 0;
+    const noise = (h % 1000) / 1000 - 0.5;
+    values.push(Math.max(0, Math.round((anchor * (1 + noise * 0.6)) * 10) / 10));
+  }
+  return values;
+}
+
+export function getMockPlayerSearchResult(query: string): PlayerSearchResult | null {
+  const propBets = mockKalshiBets.filter(
+    (b) => b.betType === "player_prop" && b.playerName && matchesPlayer(b.playerName, query)
+  );
+  if (propBets.length === 0) return null;
+
+  const playerName = propBets[0]!.playerName!;
+  const sport = propBets[0]!.sport;
+  const team = teamAbbrFromMarketTicker(propBets[0]!.marketTicker, sport);
+  const model = getModel("rolling-average");
+
+  const stats: PlayerSearchResult["stats"] = [];
+  for (const bet of propBets) {
+    if (!bet.statType || bet.line === undefined) continue;
+    const statKey = bet.statType as keyof typeof STAT_LABELS;
+    const values = mockGameLog(`${playerName}:${statKey}`, bet.line);
+    const output = model.predict({
+      sport: sport as Sport,
+      statKey,
+      playerStats: values,
+      opponentDefenseRank: 15,
+      paceFactor: 100,
+      line: bet.line,
+      marketType: "over",
+    });
+    stats.push({
+      statKey,
+      label: STAT_LABELS[statKey],
+      values,
+      gamesSampled: values.length,
+      rollingAvg: output.features.roll10 ?? 0,
+      opponentAdjusted: output.features.opponentAdjusted ?? 0,
+      recentWeighted: output.features.weighted ?? 0,
+    });
+  }
+
+  if (stats.length === 0) return null;
+
+  const trendStat = stats[0]!;
+  const trendData = [...trendStat.values]
+    .reverse()
+    .map((value, i) => ({ game: `G${i + 1}`, value }));
+
+  const markets = propBets
+    .filter((b) => b.statType && b.line !== undefined)
+    .map((b) => ({
+      ticker: b.marketTicker,
+      title: b.marketTitle,
+      statKey: b.statType as keyof typeof STAT_LABELS,
+      label: STAT_LABELS[b.statType as keyof typeof STAT_LABELS],
+      line: b.line!,
+      yesAsk: b.yesAsk,
+      yesBid: b.yesBid,
+      matchup: b.matchup,
+      expiresAt: b.expiresAt,
+      kalshiUrl: b.kalshiUrl,
+    }));
+
+  return {
+    playerName,
+    sport,
+    team,
+    stats,
+    trendStatKey: trendStat.statKey,
+    trendData,
+    markets,
   };
 }

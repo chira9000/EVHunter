@@ -129,16 +129,61 @@ export function parsePropTitle(title: string): ParsedKalshiProp | null {
   return null;
 }
 
-/** Event tickers embed matchup codes e.g. CWSPHI → CWS @ PHI */
+/** Known team codes, used to split concatenated matchup codes like NYMNYY → NYM + NYY. */
+const TEAM_ABBREVIATIONS: Partial<Record<KalshiSportKey, Set<string>>> = {
+  MLB: new Set([
+    "ARI", "ATL", "BAL", "BOS", "CHC", "CWS", "CIN", "CLE", "COL", "DET",
+    "HOU", "KC", "LAA", "LAD", "MIA", "MIL", "MIN", "NYM", "NYY", "OAK",
+    "ATH", "PHI", "PIT", "SD", "SEA", "SF", "STL", "TB", "TEX", "TOR", "WSH",
+  ]),
+  NBA: new Set([
+    "ATL", "BOS", "BKN", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW",
+    "HOU", "IND", "LAC", "LAL", "MEM", "MIA", "MIL", "MIN", "NOP", "NYK",
+    "OKC", "ORL", "PHI", "PHX", "POR", "SAC", "SAS", "TOR", "UTA", "WAS",
+  ]),
+  NFL: new Set([
+    "ARI", "ATL", "BAL", "BUF", "CAR", "CHI", "CIN", "CLE", "DAL", "DEN",
+    "DET", "GB", "HOU", "IND", "JAX", "KC", "LAC", "LAR", "LV", "MIA",
+    "MIN", "NE", "NO", "NYG", "NYJ", "PHI", "PIT", "SEA", "SF", "TB",
+    "TEN", "WAS",
+  ]),
+};
+
+/** Find a known team code at the start of `fragment`, trying longest first. */
+function matchTeamPrefix(
+  fragment: string,
+  sport: KalshiSportKey
+): string | null {
+  const dict = TEAM_ABBREVIATIONS[sport];
+  if (!dict) return null;
+  for (const len of [4, 3, 2]) {
+    const candidate = fragment.slice(0, len);
+    if (dict.has(candidate)) return candidate;
+  }
+  return null;
+}
+
+/** Event tickers embed matchup codes e.g. ...DENKC → DEN @ KC */
 export function matchupFromEventTicker(
   eventTicker: string,
   sport: KalshiSportKey
 ): string {
   const parts = eventTicker.split("-");
   const code = parts[1] ?? "";
-  const match = code.match(/\d{2}[A-Z]{3}\d{2}(.+)/i);
+  const match = code.match(/^\d{2}[A-Z]{3}\d{2}\d*([A-Z]+)$/i);
   const teams = match?.[1];
   if (!teams || teams.length < 4) return eventTicker;
+
+  const dict = TEAM_ABBREVIATIONS[sport];
+  if (dict) {
+    for (const len of [2, 3, 4]) {
+      const away = teams.slice(0, len);
+      const home = teams.slice(len);
+      if (home.length >= 2 && dict.has(away) && dict.has(home)) {
+        return `${away} @ ${home} (${sport})`;
+      }
+    }
+  }
 
   const mid = Math.floor(teams.length / 2);
   const away = teams.slice(0, mid);
@@ -146,10 +191,28 @@ export function matchupFromEventTicker(
   return `${away} @ ${home} (${sport})`;
 }
 
-export function teamAbbrFromMarketTicker(ticker: string): string | null {
+/**
+ * Team abbreviation for a market's own selection/player. For prop tickers the
+ * final segment is the numeric line (e.g. "...-NYYAJUDGE99-3"), so fall back
+ * to the segment before it; pass `sport` to resolve the code precisely via
+ * the known team list instead of a blind character-count guess.
+ */
+export function teamAbbrFromMarketTicker(
+  ticker: string,
+  sport?: KalshiSportKey
+): string | null {
   const parts = ticker.split("-");
-  const last = parts[parts.length - 1];
+  let last = parts[parts.length - 1];
+  if (last && /^\d+$/.test(last)) {
+    last = parts[parts.length - 2];
+  }
   if (!last) return null;
+
+  if (sport) {
+    const matched = matchTeamPrefix(last, sport);
+    if (matched) return matched;
+  }
+
   const m = last.match(/^([A-Z]{2,4})/);
   return m?.[1] ?? last.slice(0, 3);
 }
