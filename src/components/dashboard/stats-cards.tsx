@@ -6,7 +6,6 @@ export function StatsCards({ stats }: { stats: DashboardStats }) {
     { label: "+EV Opportunities", value: stats.totalOpportunities.toString() },
     { label: "Avg EV", value: `+${stats.avgEv.toFixed(2)}%` },
     { label: "Top Sport", value: stats.topSport },
-    { label: "Arbitrage", value: stats.arbitrageCount.toString() },
     { label: "Steam Moves", value: stats.steamMoves.toString() },
   ];
 

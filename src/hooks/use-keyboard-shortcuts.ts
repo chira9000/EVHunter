@@ -7,7 +7,6 @@ const SHORTCUTS: Record<string, string> = {
   d: "/dashboard",
   e: "/explorer",
   p: "/players",
-  a: "/arbitrage",
   y: "/parlays",
   w: "/watchlist",
   m: "/models",

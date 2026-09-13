@@ -44,21 +44,6 @@ export interface SportsbookComparison {
   evPercent: number;
 }
 
-export interface ArbitrageLeg {
-  sportsbook: string;
-  selection: string;
-  americanOdds: number;
-  stakeWeight: number;
-}
-
-export interface ArbitrageOpportunity {
-  id: string;
-  matchup: string;
-  profitPercent: number;
-  legs: ArbitrageLeg[];
-  detectedAt: string;
-}
-
 export interface PlayerAnalytics {
   id: string;
   name: string;
@@ -99,6 +84,5 @@ export interface DashboardStats {
   totalOpportunities: number;
   avgEv: number;
   topSport: Sport;
-  arbitrageCount: number;
   steamMoves: number;
 }

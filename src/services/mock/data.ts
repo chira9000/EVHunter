@@ -1,4 +1,4 @@
-import type { BetOpportunity, ArbitrageOpportunity, PlayerAnalytics, ModelPerformance } from "@/types";
+import type { BetOpportunity, PlayerAnalytics, ModelPerformance } from "@/types";
 import { BetType, Sport } from "@prisma/client";
 
 const BOOKS = ["draftkings", "fanduel", "betmgm", "caesars", "pinnacle"];
@@ -226,29 +226,6 @@ export const mockBetOpportunities: BetOpportunity[] = [
     gameDate: new Date(Date.now() + 129600000).toISOString(),
     line: 7.5,
     lineMovement: movement(125),
-  },
-];
-
-export const mockArbitrage: ArbitrageOpportunity[] = [
-  {
-    id: "arb-1",
-    matchup: "LAL vs GSW",
-    profitPercent: 1.82,
-    detectedAt: new Date().toISOString(),
-    legs: [
-      { sportsbook: "DraftKings", selection: "LAL ML", americanOdds: +145, stakeWeight: 0.42 },
-      { sportsbook: "FanDuel", selection: "GSW ML", americanOdds: -130, stakeWeight: 0.58 },
-    ],
-  },
-  {
-    id: "arb-2",
-    matchup: "NYK vs BKN Total",
-    profitPercent: 0.95,
-    detectedAt: new Date().toISOString(),
-    legs: [
-      { sportsbook: "BetMGM", selection: "Over 224.5", americanOdds: +108, stakeWeight: 0.48 },
-      { sportsbook: "Pinnacle", selection: "Under 224.5", americanOdds: -102, stakeWeight: 0.52 },
-    ],
   },
 ];
 

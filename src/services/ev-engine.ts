@@ -1,6 +1,5 @@
 import {
   americanToImpliedProbability,
-  arbitrageProfitPercent,
   closingLineValue,
   evTier,
   expectedValuePercent,
@@ -142,18 +141,6 @@ export function filterOpportunities(
     }
     return true;
   });
-}
-
-export function detectArbitrage(
-  legs: { americanOdds: number; sportsbook: string; selection: string }[]
-): { profitPercent: number; stakeWeights: number[] } | null {
-  const probs = legs.map((l) => americanToImpliedProbability(l.americanOdds));
-  const profit = arbitrageProfitPercent(probs);
-  if (profit <= 0) return null;
-  const decimals = probs.map((p) => 1 / p);
-  const inverseSum = decimals.reduce((a, b) => a + b, 0);
-  const stakeWeights = decimals.map((d) => d / inverseSum);
-  return { profitPercent: profit, stakeWeights };
 }
 
 export function getOpportunities(filters: BetFilters = {}): BetOpportunity[] {
