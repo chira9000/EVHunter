@@ -11,27 +11,30 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatGroup } from "@/components/ui/stat-group";
 import { mockModelPerformance } from "@/services/mock/data";
 import { formatPercent } from "@/lib/utils";
 
 export default function ModelsPage() {
   const model = mockModelPerformance[0]!;
 
+  const stats = [
+    { label: "Sample", value: model.sampleSize.toLocaleString() },
+    { label: "Hit Rate", value: formatPercent(model.hitRate) },
+    { label: "ROI", value: formatPercent(model.roi) },
+    { label: "Brier", value: model.brierScore.toFixed(3) },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Model Performance</h1>
-        <p className="text-sm text-zinc-500">
+        <h1 className="text-xl font-semibold tracking-tight">Model Performance</h1>
+        <p className="text-sm text-muted-foreground">
           Backtest results and calibration — ML models pluggable via registry
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Sample" value={model.sampleSize.toLocaleString()} />
-        <StatCard label="Hit Rate" value={formatPercent(model.hitRate)} />
-        <StatCard label="ROI" value={formatPercent(model.roi)} />
-        <StatCard label="Brier" value={model.brierScore.toFixed(3)} />
-      </div>
+      <StatGroup items={stats} className="md:grid-cols-4" />
 
       <Card>
         <CardHeader className="flex flex-row items-center gap-2">
@@ -42,13 +45,14 @@ export default function ModelsPage() {
         <CardContent className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={model.calibration}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="bucket" stroke="#71717a" fontSize={11} />
-              <YAxis stroke="#71717a" fontSize={11} domain={[0, 1]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="bucket" stroke="var(--muted-foreground)" fontSize={11} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={11} domain={[0, 1]} />
               <Tooltip
                 contentStyle={{
-                  background: "#18181b",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 6,
                 }}
               />
               <Line
@@ -60,7 +64,7 @@ export default function ModelsPage() {
               <Line
                 type="monotone"
                 dataKey="actual"
-                stroke="#38bdf8"
+                stroke="#71717a"
                 name="Actual"
                 strokeDasharray="4 4"
               />
@@ -69,28 +73,11 @@ export default function ModelsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Future ML Integration</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-zinc-500">
-          Swap models via <code className="text-emerald-400">modelRegistry</code> in{" "}
-          <code className="text-zinc-400">src/models/rolling-average-model.ts</code>.
-          Stub <code className="text-zinc-400">ml-stub</code> reserved for TensorFlow /
-          PyTorch / ONNX pipelines.
-        </CardContent>
-      </Card>
+      <p className="text-sm text-muted-foreground">
+        Swap models via <code className="text-accent">modelRegistry</code> in{" "}
+        <code>src/models/rolling-average-model.ts</code>. Stub{" "}
+        <code>ml-stub</code> reserved for TensorFlow / PyTorch / ONNX pipelines.
+      </p>
     </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <Card>
-      <CardContent className="pt-4">
-        <p className="text-xs uppercase text-zinc-500">{label}</p>
-        <p className="font-mono text-2xl font-bold text-emerald-400">{value}</p>
-      </CardContent>
-    </Card>
   );
 }

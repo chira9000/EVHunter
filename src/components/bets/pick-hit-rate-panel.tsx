@@ -7,9 +7,9 @@ function pct(rate: number): string {
 }
 
 function statusColor(status: RecommendedPick["status"]): string {
-  if (status === "won") return "text-emerald-400";
-  if (status === "lost") return "text-red-400";
-  return "text-zinc-400";
+  if (status === "won") return "text-accent";
+  if (status === "lost") return "text-danger";
+  return "text-muted-foreground";
 }
 
 export function PickHitRatePanel({ stats }: { stats: PickHitRateStats }) {
@@ -20,24 +20,22 @@ export function PickHitRatePanel({ stats }: { stats: PickHitRateStats }) {
 
   return (
     <section
-      className="glass-panel space-y-4 rounded-xl p-4"
+      className="space-y-4 rounded-lg border border-border p-4"
       aria-label="Recommended pick hit rate"
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-zinc-200">
-            Recommended pick hit rate
-          </h2>
-          <p className="text-xs text-zinc-500">
+          <h2 className="text-sm font-semibold">Recommended pick hit rate</h2>
+          <p className="text-xs text-muted-foreground">
             Share of past portfolio Yes picks that settled Yes on Kalshi
             (includes NBA player points)
           </p>
         </div>
         <div className="text-right">
-          <p className="font-mono text-3xl font-semibold text-emerald-400">
+          <p className="font-mono text-2xl font-semibold text-accent">
             {stats.settled > 0 ? pct(stats.hitRate) : "—"}
           </p>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted-foreground">
             {stats.wins}W – {stats.losses}L
             {stats.pending > 0 ? ` · ${stats.pending} pending` : ""}
           </p>
@@ -45,24 +43,21 @@ export function PickHitRatePanel({ stats }: { stats: PickHitRateStats }) {
       </div>
 
       {trends && (
-        <div className="space-y-3 border-t border-white/5 pt-3">
-          <span className="text-xs font-medium text-zinc-500">
+        <div className="space-y-3 border-t border-border pt-3">
+          <span className="text-xs font-medium text-muted-foreground">
             Trend analysis
           </span>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-x-6 gap-y-3 sm:grid-cols-3">
             {trends.windows.map((w) => (
-              <div
-                key={w.window}
-                className="rounded-lg border border-white/10 bg-zinc-950/40 p-3"
-              >
-                <p className="text-[10px] uppercase tracking-wider text-zinc-500">
+              <div key={w.window}>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                   {w.label}
                 </p>
-                <p className="mt-0.5 text-xs text-zinc-300">{w.summary}</p>
+                <p className="mt-0.5 text-xs">{w.summary}</p>
                 {w.bullets.length > 0 && (
                   <ul className="mt-2 space-y-1">
                     {w.bullets.map((bullet) => (
-                      <li key={bullet} className="text-xs text-amber-400">
+                      <li key={bullet} className="text-xs text-warning">
                         {bullet}
                       </li>
                     ))}
@@ -72,7 +67,7 @@ export function PickHitRatePanel({ stats }: { stats: PickHitRateStats }) {
             ))}
           </div>
           {trends.exclusionRules.length > 0 && (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               Excluding from next batch:{" "}
               {trends.exclusionRules.map((r) => r.reason).join(", ")}
             </p>
@@ -81,18 +76,15 @@ export function PickHitRatePanel({ stats }: { stats: PickHitRateStats }) {
       )}
 
       {sportRows.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-x-6 gap-y-2 border-t border-border pt-3">
           {sportRows.map(([sport, row]) => (
-            <div
-              key={sport}
-              className="rounded-lg border border-white/10 bg-zinc-950/40 px-3 py-2"
-            >
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500">
+            <div key={sport}>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 {sport}
               </p>
-              <p className="font-mono text-sm text-zinc-200">
+              <p className="font-mono text-sm">
                 {pct(row.hitRate)}{" "}
-                <span className="text-zinc-500">
+                <span className="text-muted-foreground">
                   ({row.wins}/{row.settled})
                 </span>
               </p>
@@ -102,15 +94,15 @@ export function PickHitRatePanel({ stats }: { stats: PickHitRateStats }) {
       )}
 
       {stats.settled === 0 ? (
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-foreground">
           No settled recommendations yet. Picks are recorded from each portfolio
           refresh and scored after markets expire.
         </p>
       ) : stats.recent.length > 0 ? (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto border-t border-border pt-3">
           <table className="w-full min-w-[32rem] text-left text-sm">
             <thead>
-              <tr className="border-b border-white/10 text-xs uppercase tracking-wider text-zinc-500">
+              <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
                 <th className="py-2 pr-3 font-medium">Pick</th>
                 <th className="py-2 pr-3 font-medium">Sport</th>
                 <th className="py-2 pr-3 font-medium">Result</th>
@@ -121,10 +113,10 @@ export function PickHitRatePanel({ stats }: { stats: PickHitRateStats }) {
               {stats.recent.slice(0, 8).map((pick) => (
                 <tr
                   key={`${pick.marketTicker}-${pick.settledAt}`}
-                  className="border-b border-white/5"
+                  className="border-b border-border"
                 >
-                  <td className="py-2 pr-3 text-zinc-300">{pick.selection}</td>
-                  <td className="py-2 pr-3 font-mono text-xs text-zinc-500">
+                  <td className="py-2 pr-3">{pick.selection}</td>
+                  <td className="py-2 pr-3 font-mono text-xs text-muted-foreground">
                     {pick.sport}
                     {pick.statType === "points" ? " · PTS" : ""}
                   </td>
@@ -133,7 +125,7 @@ export function PickHitRatePanel({ stats }: { stats: PickHitRateStats }) {
                   >
                     {pick.status}
                   </td>
-                  <td className="py-2 font-mono text-xs text-zinc-500">
+                  <td className="py-2 font-mono text-xs text-muted-foreground">
                     {pick.settledAt
                       ? new Date(pick.settledAt).toLocaleDateString()
                       : "—"}

@@ -3,11 +3,11 @@ import { formatEvPercent } from "@/lib/betting-math";
 import type { EvTier } from "@/lib/betting-math";
 
 const tierStyles: Record<EvTier, string> = {
-  elite: "text-violet-400 bg-violet-500/15 border-violet-500/30",
-  strong: "text-emerald-400 bg-emerald-500/15 border-emerald-500/30",
-  moderate: "text-sky-400 bg-sky-500/15 border-sky-500/30",
-  marginal: "text-amber-400 bg-amber-500/15 border-amber-500/30",
-  negative: "text-zinc-500 bg-zinc-500/10 border-zinc-500/20",
+  elite: "text-accent bg-accent/15 border-accent/30 font-bold",
+  strong: "text-accent bg-accent/10 border-accent/25",
+  moderate: "text-foreground bg-foreground/5 border-border",
+  marginal: "text-warning bg-warning/10 border-warning/25",
+  negative: "text-muted-foreground bg-foreground/5 border-border",
 };
 
 export function EvBadge({

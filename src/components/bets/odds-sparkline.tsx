@@ -11,7 +11,7 @@ import type { LineMovementPoint } from "@/types";
 
 export function OddsSparkline({ data }: { data: LineMovementPoint[] }) {
   if (!data.length) {
-    return <div className="h-8 w-24 rounded bg-white/5" aria-hidden />;
+    return <div className="h-8 w-24 rounded bg-foreground/5" aria-hidden />;
   }
 
   const chartData = data.map((d, i) => ({
@@ -22,7 +22,7 @@ export function OddsSparkline({ data }: { data: LineMovementPoint[] }) {
 
   const trend =
     data[data.length - 1]!.americanOdds - data[0]!.americanOdds;
-  const color = trend < 0 ? "#34d399" : trend > 0 ? "#f87171" : "#94a3b8";
+  const color = trend < 0 ? "#10b981" : trend > 0 ? "#f87171" : "#71717a";
 
   return (
     <div className="h-8 w-24" role="img" aria-label="Odds movement sparkline">
@@ -31,8 +31,9 @@ export function OddsSparkline({ data }: { data: LineMovementPoint[] }) {
           <YAxis hide domain={["dataMin - 5", "dataMax + 5"]} />
           <Tooltip
             contentStyle={{
-              background: "#18181b",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 6,
               fontSize: 11,
             }}
             formatter={(v) => [v, "Odds"]}

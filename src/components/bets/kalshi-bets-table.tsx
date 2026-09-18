@@ -60,70 +60,74 @@ export function KalshiBetsTable({ bets }: { bets: KalshiBet[] }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
-        {(
-          [
-            ["all", `All (${bets.length})`],
-            ["player_prop", `Props (${propCount})`],
-            ["moneyline", `Moneylines (${mlCount})`],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTypeFilter(key)}
-            className={cn(
-              "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
-              typeFilter === key
-                ? "bg-emerald-500/20 text-emerald-400"
-                : "bg-white/5 text-zinc-400 hover:text-zinc-200"
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+        <div className="flex flex-wrap gap-1">
+          {(
+            [
+              ["all", `All (${bets.length})`],
+              ["player_prop", `Props (${propCount})`],
+              ["moneyline", `Moneylines (${mlCount})`],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTypeFilter(key)}
+              className={cn(
+                "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                typeFilter === key
+                  ? "bg-accent/10 text-accent"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setSportFilter("all")}
-          className={cn(
-            "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
-            sportFilter === "all"
-              ? "bg-sky-500/20 text-sky-400"
-              : "bg-white/5 text-zinc-400 hover:text-zinc-200"
-          )}
-        >
-          All sports ({bets.length})
-        </button>
-        {KALSHI_SPORT_KEYS.map((sport) => (
+        <div className="hidden h-4 w-px bg-border sm:block" />
+
+        <div className="flex flex-wrap gap-1">
           <button
-            key={sport}
             type="button"
-            onClick={() => setSportFilter(sport)}
+            onClick={() => setSportFilter("all")}
             className={cn(
-              "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
-              sportFilter === sport
-                ? "bg-sky-500/20 text-sky-400"
-                : "bg-white/5 text-zinc-400 hover:text-zinc-200",
-              sportCounts[sport] === 0 && "opacity-50"
+              "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+              sportFilter === "all"
+                ? "bg-accent/10 text-accent"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
-            {sport} ({sportCounts[sport]})
+            All sports
           </button>
-        ))}
+          {KALSHI_SPORT_KEYS.map((sport) => (
+            <button
+              key={sport}
+              type="button"
+              onClick={() => setSportFilter(sport)}
+              className={cn(
+                "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                sportFilter === sport
+                  ? "bg-accent/10 text-accent"
+                  : "text-muted-foreground hover:text-foreground",
+                sportCounts[sport] === 0 && "opacity-40"
+              )}
+            >
+              {sport} ({sportCounts[sport]})
+            </button>
+          ))}
+        </div>
       </div>
 
       <div
         ref={parentRef}
-        className="h-[calc(100vh-280px)] overflow-auto rounded-xl border border-white/10 bg-zinc-900/40"
+        className="h-[calc(100vh-280px)] overflow-auto rounded-lg border border-border"
         role="region"
         aria-label="Kalshi best bets"
       >
         <table className="w-full min-w-[1040px] border-collapse text-sm">
-          <thead className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur">
-            <tr className="border-b border-white/10 text-left text-xs uppercase tracking-wider text-zinc-500">
+          <thead className="sticky top-0 z-10 bg-background">
+            <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
               {columns.map((c) => (
                 <th key={c} className="px-3 py-3 font-medium">
                   {c}
@@ -142,45 +146,40 @@ export function KalshiBetsTable({ bets }: { bets: KalshiBet[] }) {
               return (
                 <tr
                   key={bet.id}
-                  className={cn(
-                    "absolute left-0 w-full border-b border-white/5 hover:bg-white/[0.02]",
-                    virtualRow.index % 2 === 0 && "bg-white/[0.01]"
-                  )}
+                  className="absolute left-0 w-full border-b border-border hover:bg-foreground/[0.03]"
                   style={{
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
-                  <td className="px-3 py-2 font-mono text-zinc-500">{rank}</td>
-                  <td className="px-3 py-2 text-xs text-zinc-400">
+                  <td className="px-3 py-2 font-mono text-muted-foreground">{rank}</td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground">
                     {bet.betType === "player_prop" ? "Prop" : "ML"}
                   </td>
-                  <td className="px-3 py-2 font-medium text-emerald-400/90">
-                    {bet.sport}
-                  </td>
-                  <td className="px-3 py-2 font-medium text-zinc-200 max-w-[160px] truncate">
+                  <td className="px-3 py-2 font-medium">{bet.sport}</td>
+                  <td className="px-3 py-2 max-w-[160px] truncate font-medium">
                     {bet.playerName ?? bet.selection}
                   </td>
-                  <td className="px-3 py-2 text-zinc-400 max-w-[200px] truncate">
+                  <td className="px-3 py-2 max-w-[200px] truncate text-muted-foreground">
                     {bet.betType === "player_prop"
                       ? `${bet.line}+ ${bet.statType}`
                       : bet.matchup}
                   </td>
-                  <td className="px-3 py-2 font-mono text-emerald-400/90">
+                  <td className="px-3 py-2 font-mono">
                     {(bet.modelProbability * 100).toFixed(1)}%
                   </td>
-                  <td className="px-3 py-2 font-mono text-zinc-300">
+                  <td className="px-3 py-2 font-mono text-muted-foreground">
                     {bet.qualityScore != null
                       ? bet.qualityScore.toFixed(2)
                       : "—"}
                   </td>
                   <td className="px-3 py-2">
                     <EvBadge evPercent={bet.edgePercent} tier={tier} />
-                    <span className="ml-1 font-mono text-xs text-zinc-500">
+                    <span className="ml-1 font-mono text-xs text-muted-foreground">
                       {formatEvPercent(bet.edgePercent)}
                     </span>
                   </td>
-                  <td className="px-3 py-2 font-mono text-zinc-400">
+                  <td className="px-3 py-2 font-mono text-muted-foreground">
                     {bet.bankrollPct != null
                       ? `${bet.bankrollPct.toFixed(1)}%`
                       : "—"}
@@ -193,7 +192,7 @@ export function KalshiBetsTable({ bets }: { bets: KalshiBet[] }) {
                       href={bet.kalshiUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-emerald-500 hover:text-emerald-400"
+                      className="inline-flex items-center gap-1 text-xs text-accent hover:underline"
                     >
                       Trade <ExternalLink className="h-3 w-3" />
                     </a>
@@ -204,12 +203,12 @@ export function KalshiBetsTable({ bets }: { bets: KalshiBet[] }) {
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <p className="p-8 text-center text-zinc-500">
+          <p className="p-8 text-center text-sm text-muted-foreground">
             No scored Kalshi markets in this filter.
           </p>
         )}
         {filtered.length > 0 && (
-          <p className="border-t border-white/5 px-4 py-2 text-xs text-zinc-600">
+          <p className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
             All markets: model ≥50%, ask ≥50¢. MLB/NFL/NBA props also require EV≥3%.
             Soccer & tennis moneylines ranked by fair price vs ask. Diversified with
             correlation penalties.

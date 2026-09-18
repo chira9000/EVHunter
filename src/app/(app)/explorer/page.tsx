@@ -11,21 +11,21 @@ export default function ExplorerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Kalshi Explorer</h1>
-        <p className="text-sm text-zinc-500">
+        <h1 className="text-xl font-semibold tracking-tight">Kalshi Explorer</h1>
+        <p className="text-sm text-muted-foreground">
           Live MLB, NFL & NBA contracts from Kalshi — including NBA player points
         </p>
       </div>
       {pickHitRate && <PickHitRatePanel stats={pickHitRate} />}
       {loading ? (
         <div className="space-y-2">
-          <p className="text-sm text-zinc-500">Loading Kalshi markets…</p>
+          <p className="text-sm text-muted-foreground">Loading Kalshi markets…</p>
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full rounded-xl" />
+            <Skeleton key={i} className="h-12 w-full" />
           ))}
         </div>
       ) : error ? (
-        <p className="text-red-400">{error}</p>
+        <p className="text-sm text-danger">{error}</p>
       ) : (
         <KalshiBetsTable bets={bets} />
       )}

@@ -30,8 +30,8 @@ export default function PlayersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Player Analytics</h1>
-        <p className="text-sm text-zinc-500">
+        <h1 className="text-xl font-semibold tracking-tight">Player Analytics</h1>
+        <p className="text-sm text-muted-foreground">
           Search a player to pull their live Kalshi prop markets and rolling,
           opponent-adjusted, and pace-adjusted stats.
         </p>
@@ -49,11 +49,7 @@ export default function PlayersPage() {
         </Button>
       </form>
 
-      {error && (
-        <Card>
-          <CardContent className="py-6 text-sm text-red-400">{error}</CardContent>
-        </Card>
-      )}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       {loading && (
         <div className="grid gap-4 md:grid-cols-3">
@@ -64,12 +60,9 @@ export default function PlayersPage() {
       )}
 
       {!loading && !error && !result && (
-        <Card>
-          <CardContent className="py-10 text-center text-sm text-zinc-500">
-            Search for a player to pull live stats from their Kalshi prop
-            markets.
-          </CardContent>
-        </Card>
+        <p className="rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+          Search for a player to pull live stats from their Kalshi prop markets.
+        </p>
       )}
 
       {!loading && result && (
@@ -103,13 +96,14 @@ export default function PlayersPage() {
             <CardContent className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={result.trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="game" stroke="#71717a" fontSize={11} />
-                  <YAxis stroke="#71717a" fontSize={11} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="game" stroke="var(--muted-foreground)" fontSize={11} />
+                  <YAxis stroke="var(--muted-foreground)" fontSize={11} />
                   <Tooltip
                     contentStyle={{
-                      background: "#18181b",
-                      border: "1px solid rgba(255,255,255,0.1)",
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 6,
                     }}
                   />
                   <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} />
@@ -122,19 +116,19 @@ export default function PlayersPage() {
             <CardHeader>
               <CardTitle>Live Kalshi markets</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="divide-y divide-border p-0">
               {result.markets.map((m) => (
                 <a
                   key={m.ticker}
                   href={m.kalshiUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-between rounded-md border border-white/10 px-3 py-2 text-sm hover:bg-white/5"
+                  className="flex items-center justify-between px-4 py-3 text-sm hover:bg-foreground/5"
                 >
-                  <span className="text-zinc-200">
+                  <span>
                     {m.line}+ {m.label} — {m.matchup}
                   </span>
-                  <span className="font-mono text-emerald-400">
+                  <span className="font-mono text-accent">
                     {Math.round(m.yesAsk * 100)}¢
                   </span>
                 </a>
@@ -150,7 +144,7 @@ export default function PlayersPage() {
 function StatRow({ stat }: { stat: PlayerSearchStat }) {
   return (
     <div>
-      <h3 className="mb-2 text-xs uppercase text-zinc-500">
+      <h3 className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
         {stat.label} ({stat.gamesSampled} games)
       </h3>
       <div className="grid gap-6 md:grid-cols-3">
@@ -180,12 +174,12 @@ function MetricBlock({
 }) {
   return (
     <div>
-      <h4 className="mb-2 text-xs uppercase text-zinc-500">{title}</h4>
+      <h4 className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">{title}</h4>
       <dl className="space-y-1">
         {Object.entries(data).map(([k, v]) => (
           <div key={k} className="flex justify-between text-sm">
-            <dt className="text-zinc-400 capitalize">{k}</dt>
-            <dd className="font-mono text-zinc-200">{v.toFixed(1)}</dd>
+            <dt className="capitalize text-muted-foreground">{k}</dt>
+            <dd className="font-mono">{v.toFixed(1)}</dd>
           </div>
         ))}
       </dl>

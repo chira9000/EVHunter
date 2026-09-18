@@ -37,10 +37,10 @@ function pct(p: number): string {
 }
 
 function qualityColor(label: ParlayQualityLabel): string {
-  if (label === "excellent") return "text-emerald-400";
-  if (label === "good") return "text-lime-400";
-  if (label === "fair") return "text-amber-400";
-  return "text-red-400";
+  if (label === "excellent") return "text-accent";
+  if (label === "good") return "text-accent";
+  if (label === "fair") return "text-warning";
+  return "text-danger";
 }
 
 function qualityText(label: ParlayQualityLabel): string {
@@ -48,9 +48,9 @@ function qualityText(label: ParlayQualityLabel): string {
 }
 
 function correlationColor(risk: ParlayCorrelationRisk): string {
-  if (risk === "low") return "text-emerald-400";
-  if (risk === "medium") return "text-amber-400";
-  return "text-red-400";
+  if (risk === "low") return "text-accent";
+  if (risk === "medium") return "text-warning";
+  return "text-danger";
 }
 
 export function ParlayAnalyzer() {
@@ -170,7 +170,7 @@ export function ParlayAnalyzer() {
           <CardContent className="space-y-3">
             <div className="relative">
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   ref={searchInputRef}
                   value={query}
@@ -182,7 +182,7 @@ export function ParlayAnalyzer() {
                   onBlur={() => setSearchFocused(false)}
                   onKeyDown={handleSearchKeyDown}
                   placeholder="Search legs — player, team, or market…"
-                  className="w-full rounded-lg border border-white/10 bg-zinc-950/60 py-2 pl-9 pr-9 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500/40 focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                  className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-9 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
                 />
                 {query && (
                   <button
@@ -192,7 +192,7 @@ export function ParlayAnalyzer() {
                       setQuery("");
                       searchInputRef.current?.focus();
                     }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -202,13 +202,13 @@ export function ParlayAnalyzer() {
               {showResults && (
                 <div
                   onMouseDown={(e) => e.preventDefault()}
-                  className="absolute z-10 mt-1 max-h-80 w-full overflow-y-auto rounded-lg border border-white/10 bg-zinc-950 shadow-xl"
+                  className="absolute z-10 mt-1 max-h-80 w-full overflow-y-auto rounded-md border border-border bg-surface"
                 >
                   {betsLoading && bets.length === 0 && (
-                    <p className="px-3 py-3 text-xs text-zinc-500">Loading live legs…</p>
+                    <p className="px-3 py-3 text-xs text-muted-foreground">Loading live legs…</p>
                   )}
                   {!betsLoading && searchResults.length === 0 && (
-                    <p className="px-3 py-3 text-xs text-zinc-500">
+                    <p className="px-3 py-3 text-xs text-muted-foreground">
                       No legs match &ldquo;{query}&rdquo;.
                     </p>
                   )}
@@ -223,32 +223,28 @@ export function ParlayAnalyzer() {
                         disabled={added}
                         className={cn(
                           "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors",
-                          i === activeIndex && !added ? "bg-white/10" : "hover:bg-white/5",
+                          i === activeIndex && !added ? "bg-foreground/10" : "hover:bg-foreground/5",
                           added && "cursor-default opacity-50"
                         )}
                       >
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-zinc-200">
-                            {bet.selection}
-                          </p>
-                          <p className="truncate text-xs text-zinc-600">
+                          <p className="truncate font-medium">{bet.selection}</p>
+                          <p className="truncate text-xs text-muted-foreground">
                             {bet.matchup} · {bet.sport.toUpperCase()}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                           {added ? (
-                            <Badge variant="secondary" className="text-zinc-500">
-                              Added
-                            </Badge>
+                            <Badge variant="secondary">Added</Badge>
                           ) : (
                             <>
-                              <span className="font-mono text-xs text-zinc-400">
+                              <span className="font-mono text-xs text-muted-foreground">
                                 {formatAmericanOdds(bet.americanOdds)}
                               </span>
                               <span
                                 className={cn(
                                   "font-mono text-xs",
-                                  bet.edgePercent > 0 ? "text-emerald-400" : "text-zinc-500"
+                                  bet.edgePercent > 0 ? "text-accent" : "text-muted-foreground"
                                 )}
                               >
                                 {formatEvPercent(bet.edgePercent)}
@@ -268,17 +264,17 @@ export function ParlayAnalyzer() {
               onChange={(e) => setText(e.target.value)}
               placeholder="Type each leg on its own line or separate with commas…&#10;e.g. Tatum 28+ points, Bucks ML, Judge 1+ hits"
               rows={8}
-              className="w-full resize-y rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500/40 focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+              className="w-full resize-y rounded-md border border-border bg-surface px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
             />
             <div>
-              <label className="mb-1 block text-xs text-zinc-500">
+              <label className="mb-1 block text-xs text-muted-foreground">
                 Offered odds (optional — American, e.g. +450)
               </label>
               <input
                 value={offeredOdds}
                 onChange={(e) => setOfferedOdds(e.target.value)}
                 placeholder="Leave blank to estimate from leg prices"
-                className="w-full rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500/40 focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
               />
             </div>
             <div className="flex flex-wrap gap-2">
@@ -299,7 +295,7 @@ export function ParlayAnalyzer() {
                 Load example
               </Button>
             </div>
-            <p className="text-xs text-zinc-600">
+            <p className="text-xs text-muted-foreground">
               Legs are matched against live Kalshi model edges when possible and
               calibrated against settled pick history. Unmatched picks use neutral
               estimates.
@@ -310,13 +306,13 @@ export function ParlayAnalyzer() {
 
       <div className="space-y-4 lg:col-span-3">
         {error && (
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <p className="rounded-md border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
             {error}
           </p>
         )}
 
         {!result && !loading && !error && (
-          <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-white/10 text-sm text-zinc-600">
+          <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
             Enter a combo and click Analyze to get a quality score and breakdown.
           </div>
         )}
@@ -324,14 +320,14 @@ export function ParlayAnalyzer() {
         {result && result.legCount > 0 && (
           <>
             <Card>
-              <CardContent className="flex flex-wrap items-center gap-6 p-6">
-                <div className="text-center">
-                  <p className="text-xs uppercase tracking-wider text-zinc-500">
+              <CardContent className="flex flex-col gap-6 p-6 sm:flex-row sm:items-center">
+                <div className="shrink-0 text-center sm:border-r sm:border-border sm:pr-6 sm:text-left">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">
                     Quality score
                   </p>
                   <p
                     className={cn(
-                      "font-mono text-5xl font-bold tabular-nums",
+                      "font-mono text-4xl font-bold tabular-nums",
                       qualityColor(result.qualityLabel)
                     )}
                   >
@@ -341,7 +337,7 @@ export function ParlayAnalyzer() {
                     {qualityText(result.qualityLabel)}
                   </p>
                 </div>
-                <div className="grid flex-1 gap-3 sm:grid-cols-2">
+                <div className="grid flex-1 grid-cols-2 gap-x-6 gap-y-3 lg:grid-cols-4">
                   {[
                     {
                       label: "Calibrated hit %",
@@ -381,12 +377,9 @@ export function ParlayAnalyzer() {
                       value: result.confidenceFactor.toFixed(2),
                     },
                   ].map((stat) => (
-                    <div
-                      key={stat.label}
-                      className="rounded-lg bg-white/5 px-3 py-2"
-                    >
-                      <p className="text-xs text-zinc-500">{stat.label}</p>
-                      <p className="font-mono text-sm text-zinc-200">{stat.value}</p>
+                    <div key={stat.label}>
+                      <p className="text-xs text-muted-foreground">{stat.label}</p>
+                      <p className="font-mono text-sm">{stat.value}</p>
                     </div>
                   ))}
                 </div>
@@ -398,7 +391,7 @@ export function ParlayAnalyzer() {
                 <CardTitle className="text-base">Analysis</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm leading-relaxed text-zinc-300">
+                <p className="text-sm leading-relaxed text-muted-foreground">
                   {result.analysis}
                 </p>
                 {result.warnings.length > 0 && (
@@ -406,7 +399,7 @@ export function ParlayAnalyzer() {
                     {result.warnings.map((warning) => (
                       <li
                         key={warning}
-                        className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-200/90"
+                        className="border-l-2 border-warning/50 pl-2 text-xs text-warning"
                       >
                         {warning}
                       </li>
@@ -419,42 +412,33 @@ export function ParlayAnalyzer() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-base">Leg breakdown</CardTitle>
-                <span className="text-xs text-zinc-500">
+                <span className="text-xs text-muted-foreground">
                   {result.matchedCount}/{result.legCount} matched to Kalshi
                 </span>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="divide-y divide-border p-0">
                 {result.legs.map((leg) => (
                   <div
                     key={leg.raw}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2 text-sm"
+                    className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-zinc-200">{leg.label}</p>
-                      <p className="truncate text-xs text-zinc-600">{leg.raw}</p>
+                      <p className="truncate font-medium">{leg.label}</p>
+                      <p className="truncate text-xs text-muted-foreground">{leg.raw}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {!leg.matched && (
-                        <Badge variant="secondary" className="text-zinc-500">
-                          Unmatched
-                        </Badge>
-                      )}
+                      {!leg.matched && <Badge variant="secondary">Unmatched</Badge>}
                       {leg.poorlyCalibrated && (
-                        <Badge
-                          variant="secondary"
-                          className="border-amber-500/30 bg-amber-500/10 text-amber-300"
-                        >
-                          Calibration shift
-                        </Badge>
+                        <Badge variant="warning">Calibration shift</Badge>
                       )}
-                      <span className="font-mono text-xs text-zinc-400">
+                      <span className="font-mono text-xs text-muted-foreground">
                         {formatAmericanOdds(leg.americanOdds)}
                       </span>
-                      <span className="font-mono text-xs text-zinc-400" title="Raw model probability">
+                      <span className="font-mono text-xs text-muted-foreground" title="Raw model probability">
                         {pct(leg.modelProbability)}
                       </span>
                       <span
-                        className="font-mono text-xs text-emerald-400/90"
+                        className="font-mono text-xs text-accent"
                         title="Calibrated probability"
                       >
                         → {pct(leg.calibratedProbability)}

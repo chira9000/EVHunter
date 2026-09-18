@@ -9,11 +9,11 @@ export default function WatchlistPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Saved Bets</h1>
-        <p className="text-sm text-zinc-500">Your watchlist and tracked opportunities</p>
+        <h1 className="text-xl font-semibold tracking-tight">Saved Bets</h1>
+        <p className="text-sm text-muted-foreground">Your watchlist and tracked opportunities</p>
       </div>
       {items.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-white/10 p-12 text-center text-zinc-500">
+        <p className="rounded-lg border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
           No saved bets. Bookmark opportunities from the Explorer.
         </p>
       ) : (

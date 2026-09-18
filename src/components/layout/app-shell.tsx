@@ -36,17 +36,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useKeyboardShortcuts();
 
   return (
-    <div className="flex min-h-screen bg-[#070b12] text-zinc-100">
+    <div className="flex min-h-screen bg-background text-foreground">
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-56 flex-col border-r border-white/5 bg-zinc-950/80 backdrop-blur-xl transition-transform lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-56 flex-col border-r border-border bg-surface transition-transform lg:static lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-14 items-center gap-2 border-b border-white/5 px-4">
-          <Zap className="h-5 w-5 text-emerald-400" aria-hidden />
-          <span className="font-mono text-sm font-bold tracking-wider text-emerald-400">
-            EVHUNTER
+        <div className="flex h-14 items-center gap-2 border-b border-border px-4">
+          <Zap className="h-4 w-4 text-accent" aria-hidden />
+          <span className="font-mono text-sm font-semibold tracking-wide">
+            EVHunter
           </span>
         </div>
         <nav className="flex-1 space-y-0.5 p-2" aria-label="Main">
@@ -57,38 +57,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                  "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
                   active
-                    ? "bg-emerald-500/15 text-emerald-400"
-                    : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                    ? "bg-accent/10 text-accent"
+                    : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
                 )}
               >
                 <item.icon className="h-4 w-4" aria-hidden />
                 {item.label}
-                <kbd className="ml-auto hidden rounded bg-white/5 px-1 font-mono text-[10px] text-zinc-500 lg:inline">
+                <kbd className="ml-auto hidden font-mono text-[10px] text-muted-foreground lg:inline">
                   ⌥{item.key}
                 </kbd>
               </Link>
             );
           })}
         </nav>
-        <div className="border-t border-white/5 p-3">
+        <div className="border-t border-border p-3">
           <ThemeToggle />
         </div>
       </aside>
 
       <div className="flex flex-1 flex-col lg:pl-0">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-white/5 bg-zinc-950/70 px-4 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur-sm lg:hidden">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label="Toggle sidebar"
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <div className="flex-1" />
         </header>
         <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
       </div>

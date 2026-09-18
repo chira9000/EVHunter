@@ -1,12 +1,26 @@
 "use client";
 
 import { signIn, signOut, useSession } from "next-auth/react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useAppStore } from "@/stores/app-store";
 import { ThemeToggle } from "@/components/theme-toggle";
+
+function SettingsSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="grid gap-4 border-b border-border py-6 first:pt-0 last:border-0 sm:grid-cols-3">
+      <h2 className="text-sm font-medium">{title}</h2>
+      <div className="space-y-4 sm:col-span-2">{children}</div>
+    </section>
+  );
+}
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -16,77 +30,63 @@ export default function SettingsPage() {
   const setRefreshInterval = useAppStore((s) => s.setRefreshInterval);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-sm text-zinc-500">Account, alerts, and preferences</p>
+    <div className="mx-auto max-w-2xl">
+      <div className="mb-2">
+        <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
+        <p className="text-sm text-muted-foreground">Account, alerts, and preferences</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Account</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {session?.user ? (
-            <>
-              <p className="text-sm">
-                Signed in as <strong>{session.user.email}</strong>
-              </p>
-              <Button variant="secondary" onClick={() => signOut()}>
-                Sign out
-              </Button>
-            </>
-          ) : (
-            <div className="flex gap-2">
-              <Button onClick={() => signIn("github")}>GitHub</Button>
-              <Button variant="secondary" onClick={() => signIn("google")}>
-                Google
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Display</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ThemeToggle />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Data refresh</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Auto-refresh</span>
-            <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
+      <SettingsSection title="Account">
+        {session?.user ? (
+          <>
+            <p className="text-sm">
+              Signed in as <strong>{session.user.email}</strong>
+            </p>
+            <Button variant="secondary" size="sm" onClick={() => signOut()}>
+              Sign out
+            </Button>
+          </>
+        ) : (
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => signIn("github")}>
+              GitHub
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => signIn("google")}>
+              Google
+            </Button>
           </div>
-          <label className="block space-y-1">
-            <span className="text-xs text-zinc-500">Interval (ms)</span>
-            <Input
-              type="number"
-              value={refreshIntervalMs}
-              onChange={(e) => setRefreshInterval(Number(e.target.value) || 30000)}
-            />
-          </label>
-        </CardContent>
-      </Card>
+        )}
+      </SettingsSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Alerts (Discord webhook)</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <SettingsSection title="Display">
+        <ThemeToggle />
+      </SettingsSection>
+
+      <SettingsSection title="Data refresh">
+        <div className="flex items-center justify-between">
+          <span className="text-sm">Auto-refresh</span>
+          <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
+        </div>
+        <label className="block space-y-1">
+          <span className="text-xs text-muted-foreground">Interval (ms)</span>
+          <Input
+            type="number"
+            value={refreshIntervalMs}
+            onChange={(e) => setRefreshInterval(Number(e.target.value) || 30000)}
+            className="max-w-xs"
+          />
+        </label>
+      </SettingsSection>
+
+      <SettingsSection title="Alerts">
+        <label className="block space-y-1">
+          <span className="text-xs text-muted-foreground">Discord webhook</span>
           <Input placeholder="https://discord.com/api/webhooks/..." disabled />
-          <p className="mt-2 text-xs text-zinc-500">
-            Configure DISCORD_WEBHOOK_URL in environment for server-side alerts.
-          </p>
-        </CardContent>
-      </Card>
+        </label>
+        <p className="text-xs text-muted-foreground">
+          Configure DISCORD_WEBHOOK_URL in environment for server-side alerts.
+        </p>
+      </SettingsSection>
     </div>
   );
 }
