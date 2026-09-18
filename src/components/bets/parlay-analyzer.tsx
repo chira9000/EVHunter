@@ -1,16 +1,36 @@
 "use client";
 
-import { useState } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
-import type { ParlayAnalysisResult, ParlayCorrelationRisk, ParlayQualityLabel } from "@/types/kalshi";
+import { useMemo, useRef, useState } from "react";
+import { Search, Sparkles, Loader2, X } from "lucide-react";
+import type {
+  KalshiBet,
+  ParlayAnalysisResult,
+  ParlayCorrelationRisk,
+  ParlayQualityLabel,
+} from "@/types/kalshi";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatAmericanOdds, formatEvPercent } from "@/lib/betting-math";
+import { useKalshiBets } from "@/hooks/use-kalshi-bets";
 
 const EXAMPLE =
   "Jayson Tatum 28+ points, Milwaukee Bucks ML, Aaron Judge 1+ hits";
+
+const MAX_SEARCH_RESULTS = 8;
+
+function normalizeQuery(value: string): string {
+  return value.toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+function searchHaystack(bet: KalshiBet): string {
+  return normalizeQuery(
+    [bet.selection, bet.marketTitle, bet.playerName, bet.matchup, bet.sport]
+      .filter(Boolean)
+      .join(" ")
+  );
+}
 
 function pct(p: number): string {
   return `${(p * 100).toFixed(1)}%`;
@@ -39,6 +59,76 @@ export function ParlayAnalyzer() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ParlayAnalysisResult | null>(null);
+
+  const { bets, loading: betsLoading } = useKalshiBets();
+  const [query, setQuery] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const existingLegs = useMemo(
+    () =>
+      new Set(
+        text
+          .split(/\n|,/)
+          .map((s) => normalizeQuery(s))
+          .filter(Boolean)
+      ),
+    [text]
+  );
+
+  const searchResults = useMemo(() => {
+    const q = normalizeQuery(query);
+    if (!q) return [];
+    const terms = q.split(" ").filter(Boolean);
+    return bets
+      .filter((bet) => {
+        const haystack = searchHaystack(bet);
+        return terms.every((t) => haystack.includes(t));
+      })
+      .sort((a, b) => {
+        const aStarts = searchHaystack(a).startsWith(q) ? 1 : 0;
+        const bStarts = searchHaystack(b).startsWith(q) ? 1 : 0;
+        if (aStarts !== bStarts) return bStarts - aStarts;
+        return b.edgePercent - a.edgePercent;
+      })
+      .slice(0, MAX_SEARCH_RESULTS);
+  }, [bets, query]);
+
+  const showResults = searchFocused && query.trim().length > 0;
+
+  function addLeg(bet: KalshiBet) {
+    const legText = bet.selection;
+    if (existingLegs.has(normalizeQuery(legText))) {
+      setQuery("");
+      return;
+    }
+    setText((prev) => {
+      const trimmed = prev.trim();
+      return trimmed ? `${trimmed}\n${legText}` : legText;
+    });
+    setQuery("");
+    setActiveIndex(0);
+    searchInputRef.current?.focus();
+  }
+
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showResults || searchResults.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => (i + 1) % searchResults.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => (i - 1 + searchResults.length) % searchResults.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const bet = searchResults[activeIndex];
+      if (bet) addLeg(bet);
+    } else if (e.key === "Escape") {
+      setQuery("");
+      searchInputRef.current?.blur();
+    }
+  }
 
   async function analyze() {
     if (!text.trim()) return;
@@ -78,6 +168,101 @@ export function ParlayAnalyzer() {
             <CardTitle className="text-base">Your parlay</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="relative">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                <input
+                  ref={searchInputRef}
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setActiveIndex(0);
+                  }}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Search legs — player, team, or market…"
+                  className="w-full rounded-lg border border-white/10 bg-zinc-950/60 py-2 pl-9 pr-9 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500/40 focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setQuery("");
+                      searchInputRef.current?.focus();
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {showResults && (
+                <div
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="absolute z-10 mt-1 max-h-80 w-full overflow-y-auto rounded-lg border border-white/10 bg-zinc-950 shadow-xl"
+                >
+                  {betsLoading && bets.length === 0 && (
+                    <p className="px-3 py-3 text-xs text-zinc-500">Loading live legs…</p>
+                  )}
+                  {!betsLoading && searchResults.length === 0 && (
+                    <p className="px-3 py-3 text-xs text-zinc-500">
+                      No legs match &ldquo;{query}&rdquo;.
+                    </p>
+                  )}
+                  {searchResults.map((bet, i) => {
+                    const added = existingLegs.has(normalizeQuery(bet.selection));
+                    return (
+                      <button
+                        key={bet.id}
+                        type="button"
+                        onClick={() => addLeg(bet)}
+                        onMouseEnter={() => setActiveIndex(i)}
+                        disabled={added}
+                        className={cn(
+                          "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors",
+                          i === activeIndex && !added ? "bg-white/10" : "hover:bg-white/5",
+                          added && "cursor-default opacity-50"
+                        )}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium text-zinc-200">
+                            {bet.selection}
+                          </p>
+                          <p className="truncate text-xs text-zinc-600">
+                            {bet.matchup} · {bet.sport.toUpperCase()}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          {added ? (
+                            <Badge variant="secondary" className="text-zinc-500">
+                              Added
+                            </Badge>
+                          ) : (
+                            <>
+                              <span className="font-mono text-xs text-zinc-400">
+                                {formatAmericanOdds(bet.americanOdds)}
+                              </span>
+                              <span
+                                className={cn(
+                                  "font-mono text-xs",
+                                  bet.edgePercent > 0 ? "text-emerald-400" : "text-zinc-500"
+                                )}
+                              >
+                                {formatEvPercent(bet.edgePercent)}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}

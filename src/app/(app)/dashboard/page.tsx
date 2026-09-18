@@ -36,9 +36,16 @@ export default function DashboardPage() {
       ? `${(pickHitRate.hitRate * 100).toFixed(1)}%`
       : "—";
 
+  const windowLabel = (window: "1d" | "2d") => {
+    const w = pickHitRate?.trends.windows.find((w) => w.window === window);
+    return w && w.settled > 0 ? `${(w.hitRate * 100).toFixed(1)}%` : "—";
+  };
+
   const statCards = [
     { label: "Portfolio", value: String(bets.length) },
     { label: "Pick hit rate", value: hitRateLabel },
+    { label: "Hit rate (24h)", value: windowLabel("1d") },
+    { label: "Hit rate (48h)", value: windowLabel("2d") },
     { label: "Player props", value: String(props || propsScored) },
     { label: "NBA points", value: String(nbaPts) },
     { label: "Moneylines", value: String(moneylinesScored) },
